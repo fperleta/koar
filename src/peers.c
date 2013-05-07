@@ -206,6 +206,18 @@ struct peer_s {
     void* state;
 };
 
+void*
+peer_get_state (peer_t peer)
+{
+    return peer->state;
+}
+
+void
+peer_set_state (peer_t peer, void* state)
+{
+    peer->state = state;
+}
+
 static void
 received (peer_t self, proto_msg_t msg)
 {
@@ -333,7 +345,7 @@ again:
 // }}}
 
 static void
-peer_init (peer_t peer, struct ev_loop* loop, int fd, peer_beh_t beh)
+peer_init (peer_t peer, struct ev_loop* loop, int fd, peer_beh_t beh, void* state)
 {
     nonblocking (fd);
 
@@ -347,12 +359,13 @@ peer_init (peer_t peer, struct ev_loop* loop, int fd, peer_beh_t beh)
     peer->ibytes = peer->obytes = 0;
     peer->oq = queue_empty;
     peer->dead = 0;
+    peer->state = state;
 
     ev_io_start (EV_A_ &(peer->rd));
 }
 
 peer_t
-peer_connect (struct ev_loop* loop, peer_beh_t beh, const char* addr)
+peer_connect (struct ev_loop* loop, peer_beh_t beh, void* state, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -380,13 +393,13 @@ peer_connect (struct ev_loop* loop, peer_beh_t beh, const char* addr)
 
     nonblocking (fd);
 
-    peer_t peer = xmalloc (sizeof (peer_t));
+    peer_t peer = xmalloc (sizeof (struct peer_s));
     peer->sa = ss;
     peer->sa_len = len;
     peer->name = strdup (addr);
 
     log_emit (LOG_DETAIL, "connected to %s", addr);
-    peer_init (peer, loop, fd, beh);
+    peer_init (peer, loop, fd, beh, state);
 
     return peer;
 }
@@ -449,9 +462,22 @@ peer_reply (peer_t peer, proto_mid_t mid, proto_msg_t msg)
 struct listener_s {
     struct ev_io io;
     struct ev_loop* loop;
-    peer_beh_t beh;
+    listener_beh_t beh;
     const char* addr;
+    void* state;
 };
+
+void*
+listener_get_state (listener_t listener)
+{
+    return listener->state;
+}
+
+void
+listener_set_state (listener_t listener, void* state)
+{
+    listener->state = state;
+}
 
 static void
 accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
@@ -470,19 +496,19 @@ accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
             return;
         DEBUGP ("%hu", fd);
 
-        peer_t peer = xmalloc (sizeof (peer_t));
+        peer_t peer = xmalloc (sizeof (struct peer_s));
         peer->sa = sa;
         peer->sa_len = sa_len;
         peer->name = addr_pretty (&sa);
 
         log_emit (LOG_DETAIL, "accepted %s on %s", peer->name, self->addr);
-        peer_init (peer, loop, fd, self->beh);
+        peer_init (peer, loop, fd, &(self->beh->peer_beh), NULL);
+        self->beh->on_accept (self, peer);
     }
-
 }
 
 listener_t
-listener_create (struct ev_loop* loop, peer_beh_t beh, const char* addr)
+listener_create (struct ev_loop* loop, listener_beh_t beh, void* state, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -528,10 +554,11 @@ listener_create (struct ev_loop* loop, peer_beh_t beh, const char* addr)
         return NULL;
     }
 
-    listener_t listener = xmalloc (sizeof (listener_t));
+    listener_t listener = xmalloc (sizeof (struct listener_s));
     listener->loop = loop;
     listener->beh = beh;
     listener->addr = addr;
+    listener->state = state;
 
     ev_io_init (&(listener->io), accept_w, fd, EV_READ);
     ev_io_start (EV_A_ &(listener->io));

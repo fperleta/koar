@@ -39,7 +39,7 @@ __log_emit (const char* fn, int ln, log_level_t lvl, const char* fmt, ...)
     char buf[1024];
     time_t t;
     char ts[64];
-    va_list ap;
+    va_list ap = {{0}};
 
     va_start (ap, fmt);
     vsnprintf (buf, 1024, fmt, ap);
@@ -143,6 +143,11 @@ static struct argp argp = {
 // echo {{{
 
 static void
+echo_on_accept (listener_t listener UNUSED, peer_t peer UNUSED)
+{
+}
+
+static void
 echo_on_message (peer_t peer, proto_msg_t msg)
 {
     size_t len = msg->header.bytes;
@@ -159,9 +164,12 @@ echo_on_shutdown (peer_t peer UNUSED)
     log_emit (LOG_NORMAL, "echo shutdown.");
 }
 
-struct peer_beh_s echo_beh = {
-    echo_on_message,
-    echo_on_shutdown
+struct listener_beh_s echo_beh = {
+    .on_accept = echo_on_accept,
+    .peer_beh = {
+        .on_message = echo_on_message,
+        .on_shutdown = echo_on_shutdown
+    }
 };
 
 // }}}
@@ -176,9 +184,9 @@ init (args_t* args)
     }
 
     DEBUGP ("%u", sizeof (proto_hdr_t));
-    listener_create (EV_DEFAULT_ &echo_beh, "tcp:20350");
+    listener_create (EV_DEFAULT_ &echo_beh, NULL, "tcp:20350");
 
-    peer_t peer = peer_connect (EV_DEFAULT_ &echo_beh, "tcp:0.0.0.0:20350");
+    peer_t peer = peer_connect (EV_DEFAULT_ &(echo_beh.peer_beh), NULL, "tcp:0.0.0.0:20350");
     proto_msg_t msg = proto_msg_alloc (6);
     strcpy ((void*) msg->payload, "burek");
     peer_send (peer, msg);
