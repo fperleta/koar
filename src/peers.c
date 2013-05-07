@@ -117,7 +117,7 @@ invalid:
 typedef struct qseg_t {
     struct qseg_t* next;
     size_t start, end;
-    proto_msg_t* msgs[QSEG_MSGS];
+    proto_msg_t msgs[QSEG_MSGS];
 } qseg_t;
 
 typedef struct {
@@ -128,7 +128,7 @@ typedef struct {
 static queue_t queue_empty = { NULL, NULL };
 
 static void
-queue_put (queue_t* q, proto_msg_t* msg)
+queue_put (queue_t* q, proto_msg_t msg)
 {
     qseg_t* qs;
 
@@ -148,14 +148,14 @@ queue_put (queue_t* q, proto_msg_t* msg)
     qs->msgs[qs->end++] = msg;
 }
 
-static proto_msg_t*
+static proto_msg_t
 queue_get (queue_t* q)
 {
     if (!q->first)
         return NULL;
 
     qseg_t* qs = q->first;
-    proto_msg_t* msg;
+    proto_msg_t msg;
 
 retry:
     if (qs->start < qs->end)
@@ -183,22 +183,22 @@ retry:
 typedef struct cont_t {
     struct cont_t* next;
     proto_mid_t mid;
-    peer_cont_t* cont;
+    peer_cont_t cont;
     void* arg;
 } cont_t;
 
-struct peer_t {
+struct peer_s {
     struct ev_io rd;
     struct ev_io wr;
     struct sockaddr_storage sa;
     socklen_t sa_len;
     const char* name;
-    peer_beh_t *beh;
+    peer_beh_t beh;
     cont_t* conts;
     proto_mid_t mid;
     proto_hdr_t ihead;
-    proto_msg_t* ibuf;
-    proto_msg_t* obuf;
+    proto_msg_t ibuf;
+    proto_msg_t obuf;
     size_t ibytes, obytes, itotal, ototal;
     queue_t oq;
     unsigned dead;
@@ -206,7 +206,7 @@ struct peer_t {
 };
 
 static void
-received (peer_t* self, proto_msg_t* msg)
+received (peer_t self, proto_msg_t msg)
 {
     if (!msg->header.reply)
     {
@@ -238,7 +238,7 @@ received (peer_t* self, proto_msg_t* msg)
 static void
 rd_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
 {
-    peer_t* self = (peer_t*) io;
+    peer_t self = (peer_t) io;
 
 again:
     if (!self->ibuf)
@@ -281,7 +281,7 @@ again:
     self->ibytes += (size_t) rlen;
     if (self->ibytes == self->itotal)
     {
-        proto_msg_t* msg = self->ibuf;
+        proto_msg_t msg = self->ibuf;
         self->ibuf = NULL;
         self->ibytes = 0;
 
@@ -301,7 +301,7 @@ shutdown:
 static void
 wr_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
 {
-    peer_t* self = (peer_t*) (io - 1);
+    peer_t self = (peer_t) (io - 1);
 
 again:
     if (!self->obuf)
@@ -317,7 +317,7 @@ again:
     self->obytes += (size_t) wlen;
     if (self->obytes == self->ototal)
     {
-        proto_msg_t* msg = self->obuf = queue_get (&(self->oq));
+        proto_msg_t msg = self->obuf = queue_get (&(self->oq));
         self->obytes = 0;
         if (self->obuf)
         {
@@ -332,7 +332,7 @@ again:
 // }}}
 
 static void
-peer_init (peer_t* peer, int fd, peer_beh_t* beh)
+peer_init (peer_t peer, int fd, peer_beh_t beh)
 {
     nonblocking (fd);
 
@@ -350,8 +350,8 @@ peer_init (peer_t* peer, int fd, peer_beh_t* beh)
     ev_io_start (EV_DEFAULT_ &(peer->rd));
 }
 
-peer_t*
-peer_connect (peer_beh_t* beh, const char* addr)
+peer_t
+peer_connect (peer_beh_t beh, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -379,7 +379,7 @@ peer_connect (peer_beh_t* beh, const char* addr)
 
     nonblocking (fd);
 
-    peer_t* peer = xmalloc (sizeof (peer_t));
+    peer_t peer = xmalloc (sizeof (peer_t));
     peer->sa = ss;
     peer->sa_len = len;
     peer->name = strdup (addr);
@@ -391,7 +391,7 @@ peer_connect (peer_beh_t* beh, const char* addr)
 }
 
 static void
-msg_write (peer_t* peer, proto_msg_t* msg)
+msg_write (peer_t peer, proto_msg_t msg)
 {
     if (peer->obuf)
     {
@@ -410,7 +410,7 @@ msg_write (peer_t* peer, proto_msg_t* msg)
 }
 
 void
-peer_send (peer_t* peer, proto_msg_t* msg)
+peer_send (peer_t peer, proto_msg_t msg)
 {
     msg->header.mid = peer->mid++;
     msg->header.reply = 0;
@@ -418,7 +418,7 @@ peer_send (peer_t* peer, proto_msg_t* msg)
 }
 
 void
-peer_request (peer_t* peer, proto_msg_t* msg, peer_cont_t* cont, void* arg)
+peer_request (peer_t peer, proto_msg_t msg, peer_cont_t cont, void* arg)
 {
     msg->header.mid = peer->mid++;
     msg->header.reply = 0;
@@ -434,7 +434,7 @@ peer_request (peer_t* peer, proto_msg_t* msg, peer_cont_t* cont, void* arg)
 }
 
 void
-peer_reply (peer_t* peer, proto_mid_t mid, proto_msg_t* msg)
+peer_reply (peer_t peer, proto_mid_t mid, proto_msg_t msg)
 {
     msg->header.mid = mid;
     msg->header.reply = 1;
@@ -445,16 +445,16 @@ peer_reply (peer_t* peer, proto_mid_t mid, proto_msg_t* msg)
 
 // listeners {{{
 
-struct listener_t {
+struct listener_s {
     struct ev_io io;
-    peer_beh_t* beh;
+    peer_beh_t beh;
     const char* addr;
 };
 
 static void
 accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
 {
-    listener_t* self = (listener_t*) io;
+    listener_t self = (listener_t) io;
     DEBUGP ("%p", self);
 
     struct sockaddr_storage sa;
@@ -468,7 +468,7 @@ accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
             return;
         DEBUGP ("%hu", fd);
 
-        peer_t* peer = xmalloc (sizeof (peer_t));
+        peer_t peer = xmalloc (sizeof (peer_t));
         peer->sa = sa;
         peer->sa_len = sa_len;
         peer->name = addr_pretty (&sa);
@@ -479,8 +479,8 @@ accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
 
 }
 
-listener_t*
-listener_create (peer_beh_t* beh, const char* addr)
+listener_t
+listener_create (peer_beh_t beh, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -526,7 +526,7 @@ listener_create (peer_beh_t* beh, const char* addr)
         return NULL;
     }
 
-    listener_t* listener = xmalloc (sizeof (listener_t));
+    listener_t listener = xmalloc (sizeof (listener_t));
     listener->beh = beh;
     listener->addr = addr;
 
@@ -537,7 +537,7 @@ listener_create (peer_beh_t* beh, const char* addr)
 }
 
 void
-listener_destroy (listener_t* listener)
+listener_destroy (listener_t listener)
 {
     ev_io_stop (EV_DEFAULT_ &(listener->io));
     close (listener->io.fd);
