@@ -471,27 +471,7 @@ accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
         peer_t* peer = xmalloc (sizeof (peer_t));
         peer->sa = sa;
         peer->sa_len = sa_len;
-
-        switch (sa.ss_family)
-        {
-            case AF_INET:
-                {
-                    struct sockaddr_in* sin = (void*) &sa;
-                    char buf[32] = "tcp:";
-                    inet_ntop (AF_INET, &(sin->sin_addr), buf + 4, 27);
-                    size_t len = 4 + strlen (buf + 4);
-                    snprintf (buf + len, 31 - len, ":%hu", ntohs (sin->sin_port));
-                    peer->name = strdup (buf);
-                }
-                break;
-            default:
-                {
-                    char buf[32];
-                    snprintf (buf, 32, "fd:%d", fd);
-                    peer->name = strdup (buf);
-                }
-                break;
-        }
+        peer->name = addr_pretty (&sa);
 
         log_emit (LOG_DETAIL, "accepted %s on %s", peer->name, self->addr);
         peer_init (peer, fd, self->beh);

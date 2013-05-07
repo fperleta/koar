@@ -16,6 +16,7 @@
 
 #define PACKED __attribute__((packed))
 #define UNUSED __attribute__((unused))
+#define MACRO static inline __attribute__((always_inline, unused))
 
 typedef enum {
     LOG_ERROR = 0,
