@@ -380,7 +380,7 @@ peer_connect (struct ev_loop* loop, peer_beh_t beh, const char* addr)
 
     nonblocking (fd);
 
-    peer_t peer = xmalloc (sizeof (peer_t));
+    peer_t peer = xmalloc (sizeof (struct peer_s));
     peer->sa = ss;
     peer->sa_len = len;
     peer->name = strdup (addr);
@@ -470,7 +470,7 @@ accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
             return;
         DEBUGP ("%hu", fd);
 
-        peer_t peer = xmalloc (sizeof (peer_t));
+        peer_t peer = xmalloc (sizeof (struct peer_s));
         peer->sa = sa;
         peer->sa_len = sa_len;
         peer->name = addr_pretty (&sa);
@@ -478,7 +478,6 @@ accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
         log_emit (LOG_DETAIL, "accepted %s on %s", peer->name, self->addr);
         peer_init (peer, loop, fd, self->beh);
     }
-
 }
 
 listener_t
@@ -528,7 +527,7 @@ listener_create (struct ev_loop* loop, peer_beh_t beh, const char* addr)
         return NULL;
     }
 
-    listener_t listener = xmalloc (sizeof (listener_t));
+    listener_t listener = xmalloc (sizeof (struct listener_s));
     listener->loop = loop;
     listener->beh = beh;
     listener->addr = addr;
