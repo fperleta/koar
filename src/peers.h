@@ -7,6 +7,7 @@
 #ifndef KOAR_PEERS_H
 #define KOAR_PEERS_H
 
+#include <ev.h>
 #include "proto.h"
 #include "defs.h"
 
@@ -26,7 +27,7 @@ struct peer_cont_s {
     void (*on_noreply) (peer_t, void*);
 };
 
-extern peer_t peer_connect (peer_beh_t, const char*);
+extern peer_t peer_connect (struct ev_loop*, peer_beh_t, const char*);
 
 extern void peer_send (peer_t, proto_msg_t);
 extern void peer_request (peer_t, proto_msg_t, peer_cont_t, void*);
@@ -38,7 +39,7 @@ extern void peer_reply (peer_t, proto_mid_t, proto_msg_t);
 
 typedef struct listener_s* listener_t;
 
-extern listener_t listener_create (peer_beh_t, const char*);
+extern listener_t listener_create (struct ev_loop*, peer_beh_t, const char*);
 extern void listener_destroy (listener_t);
 
 // }}}

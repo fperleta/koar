@@ -188,8 +188,9 @@ typedef struct cont_t {
 } cont_t;
 
 struct peer_s {
-    struct ev_io rd;
+    struct ev_io rd; // these two must be at fixed offsets, don't move them.
     struct ev_io wr;
+    struct ev_loop* loop;
     struct sockaddr_storage sa;
     socklen_t sa_len;
     const char* name;
@@ -332,7 +333,7 @@ again:
 // }}}
 
 static void
-peer_init (peer_t peer, int fd, peer_beh_t beh)
+peer_init (peer_t peer, struct ev_loop* loop, int fd, peer_beh_t beh)
 {
     nonblocking (fd);
 
@@ -347,11 +348,11 @@ peer_init (peer_t peer, int fd, peer_beh_t beh)
     peer->oq = queue_empty;
     peer->dead = 0;
 
-    ev_io_start (EV_DEFAULT_ &(peer->rd));
+    ev_io_start (EV_A_ &(peer->rd));
 }
 
 peer_t
-peer_connect (peer_beh_t beh, const char* addr)
+peer_connect (struct ev_loop* loop, peer_beh_t beh, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -385,7 +386,7 @@ peer_connect (peer_beh_t beh, const char* addr)
     peer->name = strdup (addr);
 
     log_emit (LOG_DETAIL, "connected to %s", addr);
-    peer_init (peer, fd, beh);
+    peer_init (peer, loop, fd, beh);
 
     return peer;
 }
@@ -447,12 +448,13 @@ peer_reply (peer_t peer, proto_mid_t mid, proto_msg_t msg)
 
 struct listener_s {
     struct ev_io io;
+    struct ev_loop* loop;
     peer_beh_t beh;
     const char* addr;
 };
 
 static void
-accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
+accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
 {
     listener_t self = (listener_t) io;
     DEBUGP ("%p", self);
@@ -474,13 +476,13 @@ accept_w (struct ev_loop* loop UNUSED, struct ev_io* io, int revents UNUSED)
         peer->name = addr_pretty (&sa);
 
         log_emit (LOG_DETAIL, "accepted %s on %s", peer->name, self->addr);
-        peer_init (peer, fd, self->beh);
+        peer_init (peer, loop, fd, self->beh);
     }
 
 }
 
 listener_t
-listener_create (peer_beh_t beh, const char* addr)
+listener_create (struct ev_loop* loop, peer_beh_t beh, const char* addr)
 {
     DEBUGP ("%p", beh);
     DEBUGP ("%s", addr);
@@ -527,11 +529,12 @@ listener_create (peer_beh_t beh, const char* addr)
     }
 
     listener_t listener = xmalloc (sizeof (listener_t));
+    listener->loop = loop;
     listener->beh = beh;
     listener->addr = addr;
 
     ev_io_init (&(listener->io), accept_w, fd, EV_READ);
-    ev_io_start (EV_DEFAULT_ &(listener->io));
+    ev_io_start (EV_A_ &(listener->io));
 
     return listener;
 }

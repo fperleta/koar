@@ -176,9 +176,9 @@ init (args_t* args)
     }
 
     DEBUGP ("%u", sizeof (proto_hdr_t));
-    listener_create (&echo_beh, "tcp:20350");
+    listener_create (EV_DEFAULT_ &echo_beh, "tcp:20350");
 
-    peer_t peer = peer_connect (&echo_beh, "tcp:0.0.0.0:20350");
+    peer_t peer = peer_connect (EV_DEFAULT_ &echo_beh, "tcp:0.0.0.0:20350");
     proto_msg_t msg = proto_msg_alloc (6);
     strcpy ((void*) msg->payload, "burek");
     peer_send (peer, msg);
