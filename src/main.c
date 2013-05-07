@@ -143,7 +143,7 @@ static struct argp argp = {
 // echo {{{
 
 static void
-echo_on_message (peer_t* peer, proto_msg_t* msg)
+echo_on_message (peer_t peer, proto_msg_t msg)
 {
     size_t len = msg->header.bytes;
     char buf[len + 1];
@@ -154,12 +154,12 @@ echo_on_message (peer_t* peer, proto_msg_t* msg)
 }
 
 static void
-echo_on_shutdown (peer_t* peer UNUSED)
+echo_on_shutdown (peer_t peer UNUSED)
 {
     log_emit (LOG_NORMAL, "echo shutdown.");
 }
 
-peer_beh_t echo_beh = {
+struct peer_beh_s echo_beh = {
     echo_on_message,
     echo_on_shutdown
 };
@@ -178,8 +178,8 @@ init (args_t* args)
     DEBUGP ("%u", sizeof (proto_hdr_t));
     listener_create (&echo_beh, "tcp:20350");
 
-    peer_t* peer = peer_connect (&echo_beh, "tcp:0.0.0.0:20350");
-    proto_msg_t* msg = proto_msg_alloc (6);
+    peer_t peer = peer_connect (&echo_beh, "tcp:0.0.0.0:20350");
+    proto_msg_t msg = proto_msg_alloc (6);
     strcpy ((void*) msg->payload, "burek");
     peer_send (peer, msg);
 }
@@ -237,3 +237,4 @@ main (int argc, char** argv)
     exit (0);
 }
 
+// vim:fdm=marker

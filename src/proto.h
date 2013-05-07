@@ -10,6 +10,7 @@
 #include "defs.h"
 
 typedef uint32_t proto_mid_t;
+typedef struct proto_msg_s* proto_msg_t;
 
 typedef struct {
     union {
@@ -22,15 +23,15 @@ typedef struct {
     uint32_t bytes;
 } PACKED proto_hdr_t;
 
-typedef struct {
+struct proto_msg_s {
     proto_hdr_t header;
     uint8_t payload[];
-} proto_msg_t;
+};
 
-static inline proto_msg_t*
+static inline proto_msg_t
 proto_msg_alloc (size_t size)
 {
-    proto_msg_t* msg = xmalloc (sizeof (proto_hdr_t) + size);
+    proto_msg_t msg = xmalloc (sizeof (proto_hdr_t) + size);
     msg->header.bytes = size;
     return msg;
 }
