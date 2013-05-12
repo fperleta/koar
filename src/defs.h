@@ -43,7 +43,12 @@ extern void* xmalloc (size_t);
 extern void* xrealloc (void*, size_t);
 #define xmalloc_union(s,f,t) xalloc (__builtin_offsetof (s, f) + sizeof (t))
 
-extern int using_libev;
+typedef union {
+    void* p;
+    intptr_t i;
+    uintptr_t n;
+    double d;
+} word_t;
 
 #endif /* koar/defs.h */
 
