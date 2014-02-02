@@ -4,7 +4,23 @@
 
 -- exports {{{
 module Koar.Patchctl
-    where
+
+    -- imports
+    ( module Control.Monad
+
+    -- types
+    , Nat
+    , Reg
+    , Instr(..)
+
+    -- generators
+    , Gen()
+    , runGen
+    , emit
+    , allocReg
+    , freeReg
+
+    ) where
 -- }}}
 
 -- imports {{{
