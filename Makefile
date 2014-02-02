@@ -5,7 +5,7 @@ all:	koar
 
 include config.mk
 
-KOAR_OBJS=buf main patch peers
+KOAR_OBJS=buf main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \
      $(addprefix obj/, $(KOAR_OBJS)))

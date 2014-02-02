@@ -14,6 +14,7 @@
 #include <argp.h>
 #include <ev.h>
 #include "peers.h"
+#include "patchctl.h"
 #include "defs.h"
 
 static FILE* log_file = NULL;
@@ -183,6 +184,9 @@ init (args_t* args)
         daemon (1, 0);
     }
 
+    patchctl_endpoint_t ep UNUSED = patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
+
+#if 0
     DEBUGP ("%u", sizeof (proto_hdr_t));
     listener_create (EV_DEFAULT_ &echo_beh, NULL, "tcp:20350");
 
@@ -190,6 +194,7 @@ init (args_t* args)
     proto_msg_t msg = proto_msg_alloc (6);
     strcpy ((void*) msg->payload, "burek");
     peer_send (peer, msg);
+#endif
 }
 
 static void
@@ -229,8 +234,8 @@ main (int argc, char** argv)
         atexit (close_log);
     }
 
-    init (&args);
     atexit (cleanup);
+    init (&args);
 
     /* main loop */ {
         struct ev_loop* loop = EV_DEFAULT;
