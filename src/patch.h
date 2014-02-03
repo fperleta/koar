@@ -20,7 +20,8 @@ locking protocol
 api calls:
 
 * `patch_destroy`: patch unlocked
-* `patch_activate`: patch unlocked, anode unlocked
+* `patch_root`: patch unlocked, anode unlocked
+* `patch_unroot`: patch unlocked, anode unlocked
 * `patch_tick`: patch unlocked
 * `anode_create`: patch unlocked
 * `anode_acquire`: anode unlocked
@@ -49,6 +50,7 @@ callbacks:
 #define PATCH_ALIGNED __attribute__((aligned (8)))
 
 #define PATCH_QUEUE_SIZE 128
+#define PATCH_ROOTS_INCR 64
 
 // }}}
 
@@ -91,6 +93,10 @@ struct patch_s {
     // bufpool
     bufpool_t bufpool;
 
+    // initial nodes
+    size_t nroots, roots_cap;
+    anode_t* roots;
+
     // activation queue
     size_t head, tail, count;
     anode_t queue[PATCH_QUEUE_SIZE];
@@ -110,8 +116,9 @@ MACRO void patch_unlock (patch_t p)
 
 // }}}
 
-extern void patch_activate (patch_t, anode_t);
-extern void patch_tick (patch_t);
+extern void patch_root (patch_t, anode_t);
+extern void patch_unroot (patch_t, anode_t);
+extern void patch_tick (patch_t, size_t);
 
 // patch protocol:
 // 1. create a patch;
@@ -134,6 +141,7 @@ struct anode_s {
     ainfo_t info;
     pthread_mutex_t mutex;
     size_t refcount;
+    patch_t root_patch;
     patch_stamp_t stamp;
     size_t sources, waiting;
     pnode_t refs[];

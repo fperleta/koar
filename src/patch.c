@@ -163,6 +163,9 @@ patch_init (patch_t p, size_t nworkers)
 
     p->bufpool = bufpool_create ();
 
+    p->nroots = p->roots_cap = 0;
+    p->roots = NULL;
+
     p->head = p->tail = p->count = 0;
 
     size_t i;
@@ -199,7 +202,40 @@ patch_destroy (patch_t p)
 }
 
 void
-patch_activate (patch_t p, anode_t an)
+patch_root (patch_t p, anode_t an)
+{
+    patch_lock (p);
+
+    if (p->nroots + 1 >= p->roots_cap)
+    {
+        p->roots_cap += PATCH_ROOTS_INCR;
+        p->roots = xrealloc (p->roots, p->roots_cap * sizeof (anode_t));
+    }
+
+    p->roots[p->nroots++] = an;
+
+    patch_unlock (p);
+}
+
+void
+patch_unroot (patch_t p, anode_t an)
+{
+    patch_lock (p);
+
+    size_t i;
+    for (i = 0; i < p->nroots; i++)
+        if (p->roots[i] == an)
+        {
+            p->roots[i] = p->roots[--p->nroots];
+            goto done;
+        }
+
+done:
+    patch_unlock (p);
+}
+
+static void
+activate (patch_t p, anode_t an)
 {
     pthread_mutex_lock (&(p->mutex));
 
@@ -216,20 +252,44 @@ patch_activate (patch_t p, anode_t an)
 }
 
 void
-patch_tick (patch_t p)
+patch_tick (patch_t p, size_t delta)
 {
-    pthread_mutex_lock (&(p->mutex));
+    /* activate the roots */ {
+        patch_lock (p);
 
-    if (p->working || p->count)
-    {
-        if (p->count)
-            pthread_cond_broadcast (&(p->nonempty));
-        pthread_cond_wait (&(p->empty), &(p->mutex));
+        p->delta = delta;
+
+        if (p->nroots > PATCH_QUEUE_SIZE)
+            panic ("patch queue overflow");
+
+        p->head = 0;
+        p->tail = p->nroots;
+        p->count = p->nroots;
+
+        size_t i;
+        for (i = 0; i < p->nroots; i++)
+            p->queue[i] = p->roots[i];
+
+        patch_unlock (p);
     }
 
-    p->now += p->delta;
+    // wake up the workers
+    pthread_cond_signal (&(p->nonempty));
 
-    pthread_mutex_unlock (&(p->mutex));
+    /* wait for the workers */ {
+        patch_lock (p);
+
+        if (p->working || p->count)
+        {
+            if (p->count)
+                pthread_cond_broadcast (&(p->nonempty));
+            pthread_cond_wait (&(p->empty), &(p->mutex));
+        }
+
+        p->now += p->delta;
+
+        patch_unlock (p);
+    }
 }
 
 // }}}
@@ -251,6 +311,7 @@ anode_create (patch_t p, ainfo_t info)
         panic ("pthread_mutex_init() returned %d", res);
 
     an->refcount = 1;
+    an->root_patch = NULL;
     an->stamp = (patch_stamp_t) -1;
     an->sources = an->waiting = 0;
 
@@ -260,6 +321,12 @@ anode_create (patch_t p, ainfo_t info)
 
     info->init (p, an);
 
+    if (!info->ins)
+    {
+        patch_root (p, an);
+        an->root_patch = p;
+    }
+
     return an;
 }
 
@@ -268,6 +335,8 @@ anode_destroy (anode_t an)
 {
     pthread_mutex_lock (&(an->mutex));
     an->info->exit (an);
+    if (an->root_patch)
+        patch_unroot (an->root_patch, an);
     pthread_mutex_unlock (&(an->mutex));
 
     int res = pthread_mutex_destroy (&(an->mutex));
@@ -517,7 +586,7 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
         an->waiting = an->sources;
 
     if (!(--an->waiting))
-        patch_activate (p, an);
+        activate (p, an);
 
     pthread_mutex_unlock (&(an->mutex));
 }
