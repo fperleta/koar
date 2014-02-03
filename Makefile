@@ -5,10 +5,12 @@ all:	koar
 
 include config.mk
 
+NODES_OBJS=env passive
 KOAR_OBJS=buf main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \
-     $(addprefix obj/, $(KOAR_OBJS)))
+     $(addprefix obj/, $(KOAR_OBJS)) \
+     $(addprefix obj/nodes/, $(NODES_OBJS)))
 
 SRCS=$(OBJS:obj/%.o=src/%.c)
 DEPS=$(join $(dir $(SRCS)), $(addprefix ., $(notdir $(SRCS:.c=.d))))

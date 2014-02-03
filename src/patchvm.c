@@ -9,8 +9,10 @@
 // types {{{
 
 struct patchvm_s {
+    patch_t patch;
+
     size_t nregs;
-    reg_t *regs;
+    reg_t* regs;
     size_t now;
 
     int fail;
@@ -22,9 +24,11 @@ struct patchvm_s {
 // patchvm_create {{{
 
 patchvm_t
-patchvm_create (size_t nregs)
+patchvm_create (size_t nworkers, size_t nregs)
 {
     patchvm_t vm = xmalloc (sizeof (struct patchvm_s));
+
+    vm->patch = patch_create (nworkers);
 
     vm->nregs = nregs;
     vm->regs = xmalloc (sizeof (reg_t) * nregs);
@@ -46,12 +50,17 @@ patchvm_create (size_t nregs)
 void
 patchvm_destroy (patchvm_t vm)
 {
+    patch_destroy (vm->patch);
     free (vm);
 }
 
 // }}}
 
 // accessors {{{
+
+patch_t
+patchvm_patch (patchvm_t vm)
+{ return vm->patch; }
 
 int
 patchvm_failed (patchvm_t vm)

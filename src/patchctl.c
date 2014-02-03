@@ -91,7 +91,8 @@ free_enter (patchctl_t ctl)
 static void
 free_on_patch (patchctl_t ctl, proto_msg_t msg)
 {
-    ctl->vm = patchvm_create (0);
+#define PATCH_WORKERS 4
+    ctl->vm = patchvm_create (PATCH_WORKERS, 0);
     free (msg);
 }
 

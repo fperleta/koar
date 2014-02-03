@@ -7,12 +7,15 @@
 #ifndef KOAR_PATCHVM_H
 #define KOAR_PATCHVM_H
 
+#include "patch.h"
 #include "defs.h"
 
 // types {{{
 
 typedef enum {
     T_BLANK = 0,
+    T_PNODE,
+    T_ENV,
 
     NUM_REGTAGS
 } regtag_t;
@@ -31,6 +34,9 @@ typedef struct {
     regtag_t tag;
     union {
         uintptr_t uintptr;
+        void* ptr;
+        pnode_t pn;
+        anode_t an;
     };
 } reg_t;
 
@@ -57,9 +63,10 @@ typedef void (*patchvm_opcode_t) (patchvm_t, instr_t);
 
 // }}}
 
-extern patchvm_t patchvm_create (size_t);
+extern patchvm_t patchvm_create (size_t, size_t);
 extern void patchvm_destroy (patchvm_t);
 
+extern patch_t patchvm_patch (patchvm_t);
 extern int patchvm_failed (patchvm_t);
 extern int patchvm_leaving (patchvm_t);
 

@@ -32,4 +32,50 @@ OPCODE (6, "advance", advance)
     ARG (A_NAT)
 END
 
+OPCODE (7, "reserved", nop)
+END
+
+OPCODE (8, "sum", sum)
+    ARG (A_ANYREG)
+END
+
+OPCODE (9, "prod", prod)
+    ARG (A_ANYREG)
+END
+
+OPCODE (10, "reserved", nop)
+END
+
+OPCODE (11, "reserved", nop)
+END
+
+OPCODE (12, "reserved", nop)
+END
+
+OPCODE (13, "reserved", nop)
+END
+
+OPCODE (14, "reserved", nop)
+END
+
+OPCODE (15, "reserved", nop)
+END
+
+OPCODE (16, "env/make", env_make)
+    ARG (A_ANYREG)
+    ARG (A_REG + T_PNODE)
+    ARG (A_DOUBLE)
+END
+
+OPCODE (17, "env/const", env_const)
+    ARG (A_REG + T_ENV)
+    ARG (A_DOUBLE)
+END
+
+OPCODE (18, "env/lin", env_lin)
+    ARG (A_REG + T_ENV)
+    ARG (A_DOUBLE)
+    ARG (A_DOUBLE)
+END
+
 // vim:fdm=marker:
