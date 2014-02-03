@@ -46,6 +46,20 @@ and `delta` at the moment that `nonempty` is first signalled. after activating
 all the initial nodes, the controlling process should call `patch_tick`, which
 returns control only after the processing phase is over.
 
+resource management
+===================
+
+the patch_s structure itself has no permanent reference to any node. the
+activation queue contains pointers to active nodes, but only during the
+processing phase, when no nodes may be created or destroyed, so this is
+irrelevant.
+
+since the patch is an acyclic graph, a simple reference-counting system is
+used for nodes.
+
+for passive nodes, both readers and writers are counted, as well as any
+external references held by the controlling thread.
+
 *******************************************************************************/
 // }}}
 
@@ -236,6 +250,7 @@ anode_create (patch_t p, ainfo_t info)
     if (res)
         panic ("pthread_mutex_init() returned %d", res);
 
+    an->refcount = 1;
     an->stamp = (patch_stamp_t) -1;
     an->sources = an->waiting = 0;
 
@@ -250,13 +265,32 @@ anode_create (patch_t p, ainfo_t info)
     return an;
 }
 
-void
-anode_destroy (patch_t p UNUSED, anode_t an)
+static void
+anode_destroy (anode_t an)
 {
     int res = pthread_mutex_destroy (&(an->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);
     free (an);
+}
+
+anode_t
+anode_acquire (anode_t an)
+{
+    pthread_mutex_lock (&(an->mutex));
+    an->refcount++;
+    pthread_mutex_unlock (&(an->mutex));
+    return an;
+}
+
+void
+anode_release (anode_t an)
+{
+    pthread_mutex_lock (&(an->mutex));
+    int last_ref = !(--an->refcount);
+    pthread_mutex_unlock (&(an->mutex));
+    if (last_ref)
+        anode_destroy (an);
 }
 
 static void
@@ -282,6 +316,9 @@ add_reader (pnode_t pn, anode_t an)
     }
 
     pthread_mutex_unlock (&(pn->mutex));
+
+    pnode_acquire (pn);
+
 }
 
 static void
@@ -315,6 +352,8 @@ remove_reader (pnode_t pn, anode_t an)
     }
 
     pthread_mutex_unlock (&(pn->mutex));
+
+    pnode_release (pn);
 }
 
 void
@@ -404,6 +443,7 @@ pnode_create (pinfo_t info)
     if (res)
         panic ("pthread_mutex_init() returned %d", res);
 
+    pn->refcount = 1;
     pn->stamp = (unsigned) -1;
     pn->writers = pn->written = pn->nreaders = 0;
     pn->readers = NULL;
@@ -411,13 +451,32 @@ pnode_create (pinfo_t info)
     return pn;
 }
 
-void
+static void
 pnode_destroy (pnode_t pn)
 {
     int res = pthread_mutex_destroy (&(pn->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);
     free (pn);
+}
+
+pnode_t
+pnode_acquire (pnode_t pn)
+{
+    pthread_mutex_lock (&(pn->mutex));
+    pn->refcount++;
+    pthread_mutex_unlock (&(pn->mutex));
+    return pn;
+}
+
+void
+pnode_release (pnode_t pn)
+{
+    pthread_mutex_lock (&(pn->mutex));
+    int last_ref = !(--pn->refcount);
+    pthread_mutex_unlock (&(pn->mutex));
+    if (last_ref)
+        pnode_destroy (pn);
 }
 
 patch_datum_t

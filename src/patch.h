@@ -84,12 +84,14 @@ extern void patch_tick (patch_t);
 // active nodes {{{
 
 typedef void (*anode_init_t) (patch_t, anode_t);
+typedef void (*anode_exit_t) (patch_t, anode_t);
 typedef void (*anode_tick_t) (patch_t, anode_t, patch_stamp_t, size_t);
 typedef void (*anode_msg_t) (patch_t, anode_t, unsigned);
 
 struct anode_s {
     ainfo_t info;
     pthread_mutex_t mutex;
+    size_t refcount;
     patch_stamp_t stamp;
     size_t sources, waiting;
     pnode_t refs[];
@@ -97,13 +99,15 @@ struct anode_s {
 
 struct ainfo_s {
     anode_init_t init;
+    anode_exit_t exit;
     anode_tick_t tick;
     anode_msg_t msg;
     size_t ins, outs, size;
 } PATCH_ALIGNED;
 
-extern anode_t anode_create (patch_t, ainfo_t);
-extern void anode_destroy (patch_t, anode_t);
+extern anode_t anode_create (patch_t, ainfo_t); // refcount = 1
+extern anode_t anode_acquire (anode_t);
+extern void anode_rekease (anode_t);
 
 // accessors {{{
 
@@ -149,6 +153,7 @@ typedef patch_datum_t (*pnode_combine_t) (patch_datum_t, patch_datum_t);
 struct pnode_s {
     pinfo_t info;
     pthread_mutex_t mutex;
+    size_t refcount;
     patch_stamp_t stamp; // -1 when uninitialized
     size_t writers, written;
     size_t nreaders;
@@ -164,8 +169,9 @@ struct pinfo_s {
     pnode_combine_t combine;
 } PATCH_ALIGNED;
 
-extern pnode_t pnode_create (pinfo_t);
-extern void pnode_destroy (pnode_t);
+extern pnode_t pnode_create (pinfo_t); // refcount = 1
+extern pnode_t pnode_acquire (pnode_t);
+extern void pnode_release (pnode_t);
 
 extern patch_datum_t pnode_read (pnode_t, patch_stamp_t);
 extern void pnode_write (patch_t, pnode_t, patch_datum_t, patch_stamp_t);
