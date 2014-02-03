@@ -139,8 +139,8 @@ typedef void (*anode_exit_t) (anode_t);
 typedef void (*anode_tick_t) (patch_t, anode_t, patch_stamp_t, size_t);
 
 struct anode_s {
-    ainfo_t info;
     pthread_mutex_t mutex;
+    ainfo_t info;
     size_t refcount;
     patch_t root_patch;
     patch_stamp_t stamp;
@@ -213,8 +213,8 @@ typedef patch_datum_t (*pnode_pass_t) (patch_datum_t);
 typedef void (*pnode_dispose_t) (patch_datum_t);
 
 struct pnode_s {
-    pinfo_t info;
     pthread_mutex_t mutex;
+    pinfo_t info;
     size_t refcount;
     patch_stamp_t stamp; // -1 when uninitialized
     size_t writers, written;

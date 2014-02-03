@@ -41,6 +41,7 @@ sum_combine (patch_t p, patch_datum_t a, patch_datum_t b)
 
     buf_add (x, y, p->delta);
     buf_release (y);
+
     return a;
 }
 

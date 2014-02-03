@@ -51,7 +51,7 @@ extern void bufpool_destroy (bufpool_t);
 MACRO bufpool_t
 bufpool_get (buf_t b)
 {
-    return (bufpool_t) (void*) (((uintptr_t) b.xs) & ~BUFPOOL_MASK);
+    return (bufpool_t) (void*) (((uintptr_t) b.xs) & ~(uintptr_t) BUFPOOL_MASK);
 }
 
 MACRO size_t

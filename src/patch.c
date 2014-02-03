@@ -91,6 +91,8 @@ worker (void* arg)
     patch_t p = (patch_t) arg;
     pthread_t self = pthread_self ();
 
+    pthread_detach (self);
+
     pthread_mutex_lock (&(p->mutex));
 
     while (!p->shutdown)
@@ -590,7 +592,10 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
     pthread_mutex_lock (&(an->mutex));
 
     if (an->stamp != now)
+    {
         an->waiting = an->sources;
+        an->stamp = now;
+    }
 
     if (!(--an->waiting))
         activate (p, an);

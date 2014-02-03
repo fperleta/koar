@@ -18,6 +18,16 @@ struct fwriter_s {
     SNDFILE* sf;
 };
 
+static void
+fwriter_close (fwriter_t fw)
+{
+    if (fw->sf)
+    {
+        sf_close (fw->sf);
+        fw->sf = NULL;
+    }
+}
+
 // }}}
 
 // callbacks {{{
@@ -30,7 +40,7 @@ fwriter_init (patch_t p UNUSED, anode_t an UNUSED)
 static void
 fwriter_exit (anode_t an)
 {
-    N_fwriter_close (NULL, an);
+    fwriter_close (anode_state (an));
 }
 
 static void
@@ -161,8 +171,9 @@ PATCHVM_fwriter2_make (patchvm_t vm, instr_t instr)
 {
     patch_t p = patchvm_patch (vm);
     const char* fn = (const char*) instr->args[1].utf8;
-    pnode_t in = patchvm_get (vm, instr->args[2].reg).pn;
-    reg_t val = { .tag = T_FWRITER2, .an = N_fwriter1_make (p, fn, in) };
+    pnode_t inl = patchvm_get (vm, instr->args[2].reg).pn;
+    pnode_t inr = patchvm_get (vm, instr->args[3].reg).pn;
+    reg_t val = { .tag = T_FWRITER2, .an = N_fwriter2_make (p, fn, inl, inr) };
     patchvm_set (vm, instr->args[0].reg, val);
 }
 
@@ -176,11 +187,7 @@ N_fwriter_close (patch_t p UNUSED, anode_t an)
     anode_lock (an);
 
     fwriter_t fw = anode_state (an);
-    if (fw->sf)
-    {
-        sf_close (fw->sf);
-        fw->sf = NULL;
-    }
+    fwriter_close (fw);
 
     anode_unlock (an);
 }
