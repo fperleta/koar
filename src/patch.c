@@ -258,9 +258,7 @@ anode_create (patch_t p, ainfo_t info)
     for (i = 0; i < info->ins + info->outs; i++)
         an->refs[i] = NULL;
 
-    pthread_mutex_lock (&(an->mutex)); // is this really necessary?
     info->init (p, an);
-    pthread_mutex_unlock (&(an->mutex));
 
     return an;
 }
@@ -268,6 +266,10 @@ anode_create (patch_t p, ainfo_t info)
 static void
 anode_destroy (anode_t an)
 {
+    pthread_mutex_lock (&(an->mutex));
+    an->info->exit (an);
+    pthread_mutex_unlock (&(an->mutex));
+
     int res = pthread_mutex_destroy (&(an->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);

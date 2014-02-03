@@ -11,6 +11,39 @@
 #include "buf.h"
 #include "defs.h"
 
+// documentation {{{
+/*******************************************************************************
+
+locking protocol
+================
+
+api calls:
+
+* `patch_destroy`: patch unlocked
+* `patch_activate`: patch unlocked, anode unlocked
+* `patch_tick`: patch unlocked
+* `anode_create`: patch unlocked
+* `anode_acquire`: anode unlocked
+* `anode_release`: anode unlocked
+* `anode_source`: anode unlocked, pnode unlocked
+* `anode_sink`: anode unlocked, pnode unlocked
+* `pnode_acquire`: pnode unlocked
+* `pnode_release`: pnode unlocked
+* `pnode_read`: pnode unlocked
+* `pnode_write`: patch unlocked, pnode unlocked
+* `pnode_dont_write`: patch unlocked, pnode unlocked
+
+callbacks:
+
+* `anode_init_t`: patch unlocked, anode effectively locked
+* `anode_exit_t`: anode locked
+* `anode_tick_t`: patch unlocked, anode locked
+* `pnode_combine_t`: patch unlocked, pnode locked
+* `pnode_dispose_t`: pnode locked
+
+*******************************************************************************/
+// }}}
+
 // macros {{{
 
 #define PATCH_ALIGNED __attribute__((aligned (8)))
@@ -67,6 +100,16 @@ extern int patch_init (patch_t, size_t);
 extern patch_t patch_create (size_t);
 extern void patch_destroy (patch_t);
 
+// mutual exclusion {{{
+
+MACRO void patch_lock (patch_t p)
+{ pthread_mutex_lock (&(p->mutex)); }
+
+MACRO void patch_unlock (patch_t p)
+{ pthread_mutex_unlock (&(p->mutex)); }
+
+// }}}
+
 extern void patch_activate (patch_t, anode_t);
 extern void patch_tick (patch_t);
 
@@ -84,9 +127,8 @@ extern void patch_tick (patch_t);
 // active nodes {{{
 
 typedef void (*anode_init_t) (patch_t, anode_t);
-typedef void (*anode_exit_t) (patch_t, anode_t);
+typedef void (*anode_exit_t) (anode_t);
 typedef void (*anode_tick_t) (patch_t, anode_t, patch_stamp_t, size_t);
-typedef void (*anode_msg_t) (patch_t, anode_t, unsigned);
 
 struct anode_s {
     ainfo_t info;
@@ -101,20 +143,29 @@ struct ainfo_s {
     anode_init_t init;
     anode_exit_t exit;
     anode_tick_t tick;
-    anode_msg_t msg;
     size_t ins, outs, size;
 } PATCH_ALIGNED;
 
 extern anode_t anode_create (patch_t, ainfo_t); // refcount = 1
 extern anode_t anode_acquire (anode_t);
-extern void anode_rekease (anode_t);
+extern void anode_release (anode_t);
+
+// mutual exclusion {{{
+
+MACRO void anode_lock (anode_t an)
+{ pthread_mutex_lock (&(an->mutex)); }
+
+MACRO void anode_unlock (anode_t an)
+{ pthread_mutex_unlock (&(an->mutex)); }
+
+// }}}
 
 // accessors {{{
 
 // WARNING: calling code is responsible for mutual exclusion.
 
 static inline pnode_t
-anode_get_input (anode_t an, size_t i)
+anode_get_source (anode_t an, size_t i)
 {
 #ifdef DEBUG
     if (i >= an->info->ins)
@@ -124,7 +175,7 @@ anode_get_input (anode_t an, size_t i)
 }
 
 static inline pnode_t
-anode_get_output (anode_t an, size_t i)
+anode_get_sink (anode_t an, size_t i)
 {
 #ifdef DEBUG
     if (i >= an->info->outs)
