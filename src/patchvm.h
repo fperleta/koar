@@ -16,6 +16,8 @@ typedef enum {
     T_BLANK = 0,
     T_PNODE,
     T_WIRE,
+    T_FWRITER1,
+    T_FWRITER2,
     T_ENV,
 
     NUM_REGTAGS
