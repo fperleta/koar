@@ -179,6 +179,38 @@ fail:
 
 // }}}
 
+// utf8 strings {{{
+
+static uint8_t*
+decode_utf8 (decoder_t dec)
+{
+    uint8_t* buf = NULL;
+
+    if (dec->p >= dec->end)
+        goto fail;
+
+    size_t len = decode_nat (dec);
+
+    if (dec->p + len > dec->end)
+        goto fail;
+
+    buf = xmalloc (len + 1);
+
+    size_t i;
+    for (i = 0; i < len; i++)
+        buf[i] = dec->p[i];
+    buf[len] = 0;
+
+    return buf;
+
+fail:
+    if (buf)
+        free (buf);
+    return NULL;
+}
+
+// }}}
+
 // instructions {{{
 
 static instr_t
@@ -245,6 +277,21 @@ decode_instr (decoder_t dec)
                     args[k].dbl = dbl;
                     return args;
                 }
+
+            case A_UTF8: // {{{
+                {
+                    uint8_t* utf8 = decode_utf8 (dec);
+                    arg_t* args = next_arg (k + 1, tags + 1);
+                    if (dec->fail)
+                    {
+                        if (utf8)
+                            free (utf8);
+                        goto fail;
+                    }
+                    args[k].tag = tag;
+                    args[k].utf8 = utf8;
+                    return args;
+                } // }}}
 
             default: // {{{
                 {
@@ -321,6 +368,24 @@ check_instr (patchvm_t vm, checker_t chk, instr_t instr)
 
 fail:
     chk->fail = 1;
+}
+
+// }}}
+
+// freeing instructions {{{
+
+static void
+free_instr (instr_t instr)
+{
+    if (!instr)
+        return;
+
+    size_t i;
+    for (i = 0; i < instr->nargs; i++)
+        if (instr->args[i].tag == A_UTF8)
+            free (instr->args[i].utf8);
+
+    free (instr);
 }
 
 // }}}
@@ -458,20 +523,24 @@ patchvm_exec (patchvm_t vm, const uint8_t* buf, size_t len)
     {
         instr_t instr = decode_instr (&dec);
         if (dec.fail)
-            goto fail;
+            goto fail_instr;
 
         struct checker_s chk = { .fail = 0 };
         check_instr (vm, &chk, instr);
         if (chk.fail)
-        {
-            free (instr);
-            goto fail;
-        }
+            goto fail_instr;
 
         patchvm_opcode_t run = dispatch[instr->opc];
         run (vm, instr);
         if (vm->fail)
-            goto fail;
+            goto fail_instr;
+
+        continue;
+
+fail_instr:
+        if (instr)
+            free_instr (instr);
+        goto fail;
     }
 
     return;

@@ -26,6 +26,7 @@ typedef enum {
     A_NAT,
     A_INT,
     A_DOUBLE,
+    A_UTF8,
     // keep these two at the end.
     A_ANYREG,
     A_REG
@@ -48,6 +49,7 @@ typedef struct {
         int int_;
         unsigned reg;
         double dbl;
+        uint8_t* utf8;
     };
 } arg_t;
 
