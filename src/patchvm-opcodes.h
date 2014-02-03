@@ -61,18 +61,30 @@ END
 OPCODE (15, "reserved", nop)
 END
 
-OPCODE (16, "env/make", env_make)
+OPCODE (16, "wire/make", wire_make)
+    ARG (A_ANYREG)
+    ARG (A_REG + T_PNODE)
+    ARG (A_REG + T_PNODE)
+    ARG (A_DOUBLE)
+END
+
+OPCODE (17, "wire/scale", wire_scale)
+    ARG (A_REG + T_WIRE)
+    ARG (A_DOUBLE)
+END
+
+OPCODE (18, "env/make", env_make)
     ARG (A_ANYREG)
     ARG (A_REG + T_PNODE)
     ARG (A_DOUBLE)
 END
 
-OPCODE (17, "env/const", env_const)
+OPCODE (19, "env/const", env_const)
     ARG (A_REG + T_ENV)
     ARG (A_DOUBLE)
 END
 
-OPCODE (18, "env/lin", env_lin)
+OPCODE (20, "env/lin", env_lin)
     ARG (A_REG + T_ENV)
     ARG (A_DOUBLE)
     ARG (A_DOUBLE)

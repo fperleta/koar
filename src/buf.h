@@ -112,6 +112,14 @@ buf_mul (buf_t acc, buf_t b, size_t n)
         acc.x4s[i] *= b.x4s[i];
 }
 
+MACRO void
+buf_scale (buf_t b, buf_t src, samp_t s, size_t n)
+{
+    size_t i;
+    for (i = 0; 4*i < n; i++)
+        b.x4s[i] = s * src.x4s[i];
+}
+
 #endif /* koar/buf.h */
 
 // vim:fdm=marker:

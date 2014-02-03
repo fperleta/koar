@@ -5,7 +5,7 @@ all:	koar
 
 include config.mk
 
-NODES_OBJS=env passive
+NODES_OBJS=env passive wire
 KOAR_OBJS=buf main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \
