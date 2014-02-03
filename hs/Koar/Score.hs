@@ -75,10 +75,16 @@ newtype Units = Units { unUnits :: Rational }
 
 data Kind
     = P -- passive nodes
+    | Wire
+    | FW1
+    | FW2
     | Env
 
 data Tag :: Kind -> * where
     TagP :: Tag P
+    TagWire :: Tag Wire
+    TagFW1 :: Tag FW1
+    TagFW2 :: Tag FW2
     TagEnv :: Tag Env
 
 -- }}}
@@ -87,16 +93,25 @@ data Tag :: Kind -> * where
 
 data Ref :: * -> Kind -> * where
     Rp :: Int -> Ref s P
+    Rwire :: Int -> Ref s Wire
+    Rfw1 :: Int -> Ref s FW1
+    Rfw2 :: Int -> Ref s FW2
     Renv :: Int -> Ref s Env
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
     TagP -> Rp n
+    TagWire -> Rwire n
+    TagFW1 -> Rfw1 n
+    TagFW2 -> Rfw2 n
     TagEnv -> Renv n
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
     Rp k -> k
+    Rwire k -> k
+    Rfw1 k -> k
+    Rfw2 k -> k
     Renv k -> k
 
 -- }}}
@@ -105,25 +120,39 @@ refToInt r = case r of
 
 data RefMap s a = RefMap
     { refmP :: IntMap a
+    , refmWire :: IntMap a
+    , refmFW1 :: IntMap a
+    , refmFW2 :: IntMap a
     , refmEnv :: IntMap a
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap IM.empty IM.empty
+refmEmpty = RefMap e e e e e
+  where
+    e = IM.empty
 
 refmInsert :: Ref s k -> a -> RefMap s a -> RefMap s a
 refmInsert r x rm = case r of
     Rp k -> rm { refmP = IM.insert k x $ refmP rm }
+    Rwire k -> rm { refmWire = IM.insert k x $ refmWire rm }
+    Rfw1 k -> rm { refmFW1 = IM.insert k x $ refmFW1 rm }
+    Rfw2 k -> rm { refmFW2 = IM.insert k x $ refmFW2 rm }
     Renv k -> rm { refmEnv = IM.insert k x $ refmEnv rm }
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
-    Rp k -> IM.lookup k (refmP rm)
-    Renv k -> IM.lookup k (refmEnv rm)
+    Rp k -> IM.lookup k $ refmP rm
+    Rwire k -> IM.lookup k $ refmWire rm
+    Rfw1 k -> IM.lookup k $ refmFW1 rm
+    Rfw2 k -> IM.lookup k $ refmFW2 rm
+    Renv k -> IM.lookup k $ refmEnv rm
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
     Rp k -> rm { refmP = IM.delete k $ refmP rm }
+    Rwire k -> rm { refmWire = IM.delete k $ refmWire rm }
+    Rfw1 k -> rm { refmFW1 = IM.delete k $ refmFW1 rm }
+    Rfw2 k -> rm { refmFW2 = IM.delete k $ refmFW2 rm }
     Renv k -> rm { refmEnv = IM.delete k $ refmEnv rm }
 
 -- }}}
@@ -132,25 +161,39 @@ refmDelete r rm = case r of
 
 data RefSet s = RefSet
     { refsP :: IntSet
+    , refsWire :: IntSet
+    , refsFW1 :: IntSet
+    , refsFW2 :: IntSet
     , refsEnv :: IntSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet IS.empty IS.empty
+refsEmpty = RefSet e e e e e
+  where
+    e = IS.empty
 
 refsInsert :: Ref s k -> RefSet s -> RefSet s
 refsInsert r rs = case r of
     Rp k -> rs { refsP = IS.insert k $ refsP rs }
+    Rwire k -> rs { refsWire = IS.insert k $ refsWire rs }
+    Rfw1 k -> rs { refsFW1 = IS.insert k $ refsFW1 rs }
+    Rfw2 k -> rs { refsFW2 = IS.insert k $ refsFW2 rs }
     Renv k -> rs { refsEnv = IS.insert k $ refsEnv rs }
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
     Rp k -> IS.member k $ refsP rs
+    Rwire k -> IS.member k $ refsWire rs
+    Rfw1 k -> IS.member k $ refsFW1 rs
+    Rfw2 k -> IS.member k $ refsFW2 rs
     Renv k -> IS.member k $ refsEnv rs
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
     mapM_ (f . Rp) . IS.toList $ refsP rs
+    mapM_ (f . Rwire) . IS.toList $ refsWire rs
+    mapM_ (f . Rfw1) . IS.toList $ refsFW1 rs
+    mapM_ (f . Rfw2) . IS.toList $ refsFW2 rs
     mapM_ (f . Renv) . IS.toList $ refsEnv rs
 
 -- }}}

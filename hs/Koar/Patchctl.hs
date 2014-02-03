@@ -54,7 +54,17 @@ data Instr
     | I_sum Reg
     | I_prod Reg
 
-    -- active nodes:
+    -- wires:
+    | I_wire_make Reg Reg Reg Double
+    | I_wire_scale Reg Double
+
+    -- file writers:
+    | I_fwriter1_make Reg String Reg
+    | I_fwriter1_close Reg
+    | I_fwriter2_make Reg String Reg Reg
+    | I_fwriter2_close Reg
+
+    -- envelope generators:
     | I_env_make Reg Reg Double
     | I_env_const Reg Double
     | I_env_lin Reg Double Double
@@ -78,22 +88,35 @@ bInt z = bNat . toEnum $ if z >= 0
 bDbl :: Double -> Builder
 bDbl = doubleBE
 
+bStr :: String -> Builder
+bStr s = bNat (fromIntegral $ LB.length bs) <> lazyByteString bs
+  where
+    bs = toLazyByteString $ stringUtf8 s
+
 bInstr :: Instr -> Builder
 bInstr x = case x of
-    I_nop               -> bNat 0
-    I_leave             -> bNat 1
-    I_resize k          -> bNat 2 <> bNat k
-    I_blank r           -> bNat 3 <> bNat r
-    I_move s d          -> bNat 4 <> bNat s <> bNat d
-    I_dup s d           -> bNat 5 <> bNat s <> bNat d
-    I_advance t         -> bNat 6 <> bNat t
+    I_nop                       -> bNat 0
+    I_leave                     -> bNat 1
+    I_resize k                  -> bNat 2 <> bNat k
+    I_blank r                   -> bNat 3 <> bNat r
+    I_move s d                  -> bNat 4 <> bNat s <> bNat d
+    I_dup s d                   -> bNat 5 <> bNat s <> bNat d
+    I_advance t                 -> bNat 6 <> bNat t
 
-    I_sum r             -> bNat 8 <> bNat r
-    I_prod r            -> bNat 9 <> bNat r
+    I_sum r                     -> bNat 8 <> bNat r
+    I_prod r                    -> bNat 9 <> bNat r
 
-    I_env_make r out x0 -> bNat 16 <> bNat r <> bNat out <> bDbl x0
-    I_env_const r x0    -> bNat 17 <> bNat r <> bDbl x0
-    I_env_lin r x1 t    -> bNat 18 <> bNat r <> bDbl x1 <> bDbl t
+    I_wire_make r i o s         -> bNat 16 <> bNat r <> bNat i <> bNat o <> bDbl s
+    I_wire_scale r s            -> bNat 17 <> bNat r <> bDbl s
+
+    I_fwriter1_make r fn i      -> bNat 18 <> bNat r <> bStr fn <> bNat i
+    I_fwriter1_close r          -> bNat 19 <> bNat r
+    I_fwriter2_make r fn il ir  -> bNat 20 <> bNat r <> bStr fn <> bNat il <> bNat ir
+    I_fwriter2_close r          -> bNat 21 <> bNat r
+
+    I_env_make r out x0         -> bNat 22 <> bNat r <> bNat out <> bDbl x0
+    I_env_const r x0            -> bNat 23 <> bNat r <> bDbl x0
+    I_env_lin r x1 t            -> bNat 24 <> bNat r <> bDbl x1 <> bDbl t
 
 -- }}}
 

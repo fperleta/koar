@@ -34,6 +34,61 @@ makeProd = do
 
 -- }}}
 
+-- wire {{{
+
+wireMake :: Ref s P -> Ref s P -> Double -> Score s (Ref s Wire)
+wireMake i o s = do
+    r <- freshRef TagWire
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regI <- regE i
+        regO <- regE o
+        genE . emit $ I_wire_make reg regI regO s
+    return r
+
+wireScale :: Ref s Wire -> Double -> Score s ()
+wireScale r s = event $ do
+    reg <- regE r
+    genE . emit $ I_wire_scale reg s
+
+-- }}}
+
+-- fwriter {{{
+
+fwriter1Make :: FilePath -> Ref s P -> Score s (Ref s FW1)
+fwriter1Make fn i = do
+    r <- freshRef TagFW1
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regI <- regE i
+        genE . emit $ I_fwriter1_make reg fn regI
+    return r
+
+fwriter1Close :: Ref s FW1 -> Score s ()
+fwriter1Close r = event $ do
+    reg <- regE r
+    genE . emit $ I_fwriter1_close reg
+
+fwriter2Make :: FilePath -> Ref s P -> Ref s P -> Score s (Ref s FW2)
+fwriter2Make fn il ir = do
+    r <- freshRef TagFW2
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regL <- regE il
+        regR <- regE ir
+        genE . emit $ I_fwriter2_make reg fn regL regR
+    return r
+
+fwriter2Close :: Ref s FW2 -> Score s ()
+fwriter2Close r = event $ do
+    reg <- regE r
+    genE . emit $ I_fwriter2_close reg
+
+-- }}}
+
 -- env {{{
 
 envMake :: Ref s P -> Double -> Score s (Ref s Env)
