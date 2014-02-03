@@ -73,8 +73,8 @@ extern void patch_tick (patch_t);
 // patch protocol:
 // 1. create a patch;
 // 2. repeat:
-//      1. set delta;
-//      2. create anodes, send messages, etc;
+//      1. create anodes, send messages, etc;
+//      2. set delta;
 //      3. activate the initial anodes;
 //      4. call patch_tick().
 // 3. destroy the patch.

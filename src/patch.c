@@ -6,6 +6,49 @@
 
 #include "patch.h"
 
+// documentation {{{
+/*******************************************************************************
+
+internal invariants
+===================
+
+the patch mutex must be locked whenever the contents of the patch_s structure
+are accessed.
+
+the condition variable `nonempty` is used to signal to any idle worker threads
+that the activation queue might contain items for them to process.
+
+the condition variable `empty` is used to signal to the controlling thread that
+there are no more nodes to process. this means that the tick is complete, and
+the patch time can be incremented by the tick delta.
+
+the variable `shutdown` is used to notify the worker threads that the patch is
+about to be destroyed.
+
+`nworkers` and `working` are used to track the total number of workers and the
+number of workers presently processing a node, respectively.
+
+the variable `delta` holds the duration of the current tick as the number
+sample periods. the variable `now` holds the absolute time at the beginning of
+the current tick.
+
+the patch goes through two alternating phases:
+
+- control phase: this is the initial phase. all the worker threads are waiting,
+so the patch can be safely manipulated by the controlling thread. nodes may be
+created, destroyed, and their state may be modified.  this phase is resumed
+each time the `empty` condition variable is signalled.
+
+- processing phase: the first time the `nonempty` condition variable is
+signalled while in the control phase, the processing phase is entered.  during
+this phase there is a notion of a current tick, defined by the values of `now`
+and `delta` at the moment that `nonempty` is first signalled. after activating
+all the initial nodes, the controlling process should call `patch_tick`, which
+returns control only after the processing phase is over.
+
+*******************************************************************************/
+// }}}
+
 // worker threads {{{
 
 static void
