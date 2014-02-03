@@ -445,7 +445,7 @@ pnode_create (pinfo_t info)
 
     pn->refcount = 1;
     pn->stamp = (unsigned) -1;
-    pn->writers = pn->written = pn->nreaders = 0;
+    pn->writers = pn->written = pn->nreaders = pn->toread = 0;
     pn->readers = NULL;
 
     return pn;
@@ -484,13 +484,22 @@ pnode_read (pnode_t pn, patch_stamp_t now)
 {
     pthread_mutex_lock (&(pn->mutex));
 
+    if (!pn->toread)
+        panic ("pnode_read() underflow");
+
     if (pn->stamp != now)
     {
         pn->written = 0;
         pn->state = pn->info->neutral;
+        pn->toread = pn->nreaders;
     }
 
     patch_datum_t x = pn->state;
+    if (!(--pn->toread))
+    {
+        pn->info->dispose (pn->state);
+        pn->state = pn->info->neutral;
+    }
 
     pthread_mutex_unlock (&(pn->mutex));
 
@@ -511,6 +520,29 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
     pthread_mutex_unlock (&(an->mutex));
 }
 
+static void
+check_written (patch_t p, pnode_t pn, patch_stamp_t now)
+{
+    if (pn->written < pn->writers)
+        return;
+
+    pn->toread = pn->nreaders;
+    if (!(pn->toread))
+    {
+        pn->info->dispose (pn->state);
+        pn->state = pn->info->neutral;
+    }
+
+    if (pn->nreaders == 1)
+        input_ready (p, pn->reader, now);
+    else
+    {
+        size_t i;
+        for (i = 0; i < pn->nreaders; i++)
+            input_ready (p, pn->readers[i], now);
+    }
+}
+
 void
 pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
 {
@@ -519,7 +551,7 @@ pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
     if (pn->stamp == now)
     {
         pn->written++;
-        pn->state = pn->info->combine (pn->state, x);
+        pn->state = pn->info->combine (p, pn->state, x);
     }
     else
     {
@@ -530,17 +562,28 @@ pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
 
     log_emit (LOG_DEBUG, "pnode_write() written %zu/%zu", pn->written, pn->writers);
 
-    if (pn->written == pn->writers)
+    check_written (p, pn, now);
+
+    pthread_mutex_unlock (&(pn->mutex));
+}
+
+void
+pnode_dont_write (patch_t p, pnode_t pn, patch_stamp_t now)
+{
+    pthread_mutex_lock (&(pn->mutex));
+
+    if (pn->stamp == now)
+        pn->written++;
+    else
     {
-        if (pn->nreaders == 1)
-            input_ready (p, pn->reader, now);
-        else
-        {
-            size_t i;
-            for (i = 0; i < pn->nreaders; i++)
-                input_ready (p, pn->readers[i], now);
-        }
+        pn->stamp = now;
+        pn->written = 1;
+        pn->state = pn->info->neutral;
     }
+
+    log_emit (LOG_DEBUG, "pnode_dont_write() written %zu/%zu", pn->written, pn->writers);
+
+    check_written (p, pn, now);
 
     pthread_mutex_unlock (&(pn->mutex));
 }

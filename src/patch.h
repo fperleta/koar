@@ -148,7 +148,8 @@ extern void anode_sink (anode_t, size_t, pnode_t);
 
 // passive nodes {{{
 
-typedef patch_datum_t (*pnode_combine_t) (patch_datum_t, patch_datum_t);
+typedef patch_datum_t (*pnode_combine_t) (patch_t, patch_datum_t, patch_datum_t);
+typedef void (*pnode_dispose_t) (patch_datum_t);
 
 struct pnode_s {
     pinfo_t info;
@@ -156,7 +157,7 @@ struct pnode_s {
     size_t refcount;
     patch_stamp_t stamp; // -1 when uninitialized
     size_t writers, written;
-    size_t nreaders;
+    size_t nreaders, toread;
     union {
         anode_t reader;
         anode_t* readers;
@@ -167,6 +168,7 @@ struct pnode_s {
 struct pinfo_s {
     patch_datum_t neutral;
     pnode_combine_t combine;
+    pnode_dispose_t dispose;
 } PATCH_ALIGNED;
 
 extern pnode_t pnode_create (pinfo_t); // refcount = 1
@@ -175,6 +177,7 @@ extern void pnode_release (pnode_t);
 
 extern patch_datum_t pnode_read (pnode_t, patch_stamp_t);
 extern void pnode_write (patch_t, pnode_t, patch_datum_t, patch_stamp_t);
+extern void pnode_dont_write (patch_t, pnode_t, patch_stamp_t);
 
 // }}}
 
