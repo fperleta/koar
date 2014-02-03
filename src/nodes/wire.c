@@ -35,11 +35,15 @@ wire_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 {
     wire_t w = anode_state (an);
     pnode_t src = anode_get_source (an, 0);
+    pnode_t snk = anode_get_sink (an, 0);
 
     buf_t in = { .p = pnode_read (src, now).p };
     buf_t b = buf_alloc (p->bufpool);
-
     buf_scale (b, in, w->scale, delta);
+    buf_release (in);
+
+    patch_datum_t x = { .b = b };
+    pnode_write (p, snk, x, now);
 }
 
 static struct ainfo_s

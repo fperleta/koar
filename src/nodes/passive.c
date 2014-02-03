@@ -8,6 +8,25 @@
 #include "patchvm.h"
 #include "nodes/passive.h"
 
+// utilities {{{
+
+static patch_datum_t
+pass (patch_datum_t a)
+{
+    buf_acquire (a.b);
+    return a;
+}
+
+static void
+dispose (patch_datum_t a)
+{
+    buf_t x = (buf_t) a.p;
+    if (x.p)
+        buf_release (x);
+}
+
+// }}}
+
 // N_sum {{{
 
 static patch_datum_t
@@ -25,19 +44,12 @@ sum_combine (patch_t p, patch_datum_t a, patch_datum_t b)
     return a;
 }
 
-static void
-sum_dispose (patch_datum_t a)
-{
-    buf_t x = (buf_t) a.p;
-    if (x.p)
-        buf_release (x);
-}
-
 static struct pinfo_s
 sum_pinfo = {
     .neutral = { .p = NULL },
     .combine = sum_combine,
-    .dispose = sum_dispose
+    .pass = pass,
+    .dispose = dispose
 };
 
 pnode_t
@@ -70,19 +82,12 @@ prod_combine (patch_t p, patch_datum_t a, patch_datum_t b)
     return a;
 }
 
-static void
-prod_dispose (patch_datum_t a)
-{
-    buf_t x = (buf_t) a.p;
-    if (x.p)
-        buf_release (x);
-}
-
 static struct pinfo_s
 prod_pinfo = {
     .neutral = { .p = NULL },
     .combine = prod_combine,
-    .dispose = prod_dispose
+    .pass = pass,
+    .dispose = dispose
 };
 
 pnode_t

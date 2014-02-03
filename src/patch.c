@@ -60,6 +60,13 @@ used for nodes.
 for passive nodes, both readers and writers are counted, as well as any
 external references held by the controlling thread.
 
+when an anode writes a buf to a pnode, it should ensure that the pnode has
+complete control over it, ie. that the refcount is 1, and the buf isn't
+modified afterwards.
+
+bufs read from source pnodes must never be modified, and must be released
+when no longer needed.
+
 *******************************************************************************/
 // }}}
 
@@ -574,7 +581,7 @@ pnode_read (pnode_t pn, patch_stamp_t now)
 
     pthread_mutex_unlock (&(pn->mutex));
 
-    return x;
+    return pn->info->pass (x);
 }
 
 static void

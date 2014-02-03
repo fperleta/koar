@@ -64,6 +64,7 @@ typedef struct pinfo_s* pinfo_t;
 
 typedef union {
     void* p;
+    buf_t b;
     double d;
 } patch_datum_t;
 
@@ -208,6 +209,7 @@ extern void anode_sink (anode_t, size_t, pnode_t);
 // passive nodes {{{
 
 typedef patch_datum_t (*pnode_combine_t) (patch_t, patch_datum_t, patch_datum_t);
+typedef patch_datum_t (*pnode_pass_t) (patch_datum_t);
 typedef void (*pnode_dispose_t) (patch_datum_t);
 
 struct pnode_s {
@@ -227,6 +229,7 @@ struct pnode_s {
 struct pinfo_s {
     patch_datum_t neutral;
     pnode_combine_t combine;
+    pnode_pass_t pass;
     pnode_dispose_t dispose;
 } PATCH_ALIGNED;
 
