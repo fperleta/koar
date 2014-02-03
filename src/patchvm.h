@@ -75,11 +75,12 @@ extern patch_t patchvm_patch (patchvm_t);
 extern int patchvm_failed (patchvm_t);
 extern int patchvm_leaving (patchvm_t);
 
-extern void patchvm_blank (patchvm_t vm, unsigned);
-extern reg_t patchvm_get (patchvm_t vm, unsigned);
-extern void patchvm_set (patchvm_t vm, unsigned, reg_t);
+extern void patchvm_fail (patchvm_t);
+extern void patchvm_blank (patchvm_t, unsigned);
+extern reg_t patchvm_get (patchvm_t, unsigned);
+extern void patchvm_set (patchvm_t, unsigned, reg_t);
 
-extern void patchvm_exec (patchvm_t vm, const uint8_t*, size_t);
+extern void patchvm_exec (patchvm_t, const uint8_t*, size_t);
 
 #endif /* koar/patchvm.h */
 

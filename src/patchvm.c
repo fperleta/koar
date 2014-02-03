@@ -419,8 +419,33 @@ static patchvm_opcode_t dispatch[] = {
 // primitives {{{
 
 void
+patchvm_fail (patchvm_t vm)
+{
+    vm->fail = 1;
+}
+
+void
 patchvm_blank (patchvm_t vm, unsigned reg)
 {
+    reg_t r = vm->regs[reg];
+
+    switch (r.tag)
+    {
+        case T_PNODE:
+            pnode_release (r.pn);
+            break;
+
+        case T_WIRE:
+        case T_FWRITER1:
+        case T_FWRITER2:
+        case T_ENV:
+            anode_release (r.an);
+            break;
+
+        default:
+            break;
+    }
+
     vm->regs[reg] = (reg_t) { .tag = T_BLANK, .uintptr = 0 };
 }
 
