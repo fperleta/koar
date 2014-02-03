@@ -75,9 +75,11 @@ newtype Units = Units { unUnits :: Rational }
 
 data Kind
     = P -- passive nodes
+    | Env
 
 data Tag :: Kind -> * where
     TagP :: Tag P
+    TagEnv :: Tag Env
 
 -- }}}
 
@@ -85,14 +87,17 @@ data Tag :: Kind -> * where
 
 data Ref :: * -> Kind -> * where
     Rp :: Int -> Ref s P
+    Renv :: Int -> Ref s Env
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
     TagP -> Rp n
+    TagEnv -> Renv n
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
     Rp k -> k
+    Renv k -> k
 
 -- }}}
 
@@ -100,22 +105,26 @@ refToInt r = case r of
 
 data RefMap s a = RefMap
     { refmP :: IntMap a
+    , refmEnv :: IntMap a
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap IM.empty
+refmEmpty = RefMap IM.empty IM.empty
 
 refmInsert :: Ref s k -> a -> RefMap s a -> RefMap s a
 refmInsert r x rm = case r of
     Rp k -> rm { refmP = IM.insert k x $ refmP rm }
+    Renv k -> rm { refmEnv = IM.insert k x $ refmEnv rm }
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
     Rp k -> IM.lookup k (refmP rm)
+    Renv k -> IM.lookup k (refmEnv rm)
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
     Rp k -> rm { refmP = IM.delete k $ refmP rm }
+    Renv k -> rm { refmEnv = IM.delete k $ refmEnv rm }
 
 -- }}}
 
@@ -123,22 +132,26 @@ refmDelete r rm = case r of
 
 data RefSet s = RefSet
     { refsP :: IntSet
+    , refsEnv :: IntSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet IS.empty
+refsEmpty = RefSet IS.empty IS.empty
 
 refsInsert :: Ref s k -> RefSet s -> RefSet s
 refsInsert r rs = case r of
     Rp k -> rs { refsP = IS.insert k $ refsP rs }
+    Renv k -> rs { refsEnv = IS.insert k $ refsEnv rs }
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
     Rp k -> IS.member k $ refsP rs
+    Renv k -> IS.member k $ refsEnv rs
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
     mapM_ (f . Rp) . IS.toList $ refsP rs
+    mapM_ (f . Renv) . IS.toList $ refsEnv rs
 
 -- }}}
 

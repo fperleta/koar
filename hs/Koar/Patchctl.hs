@@ -41,6 +41,7 @@ type Nat = Word
 type Reg = Word
 
 data Instr
+    -- builtins:
     = I_nop
     | I_leave
     | I_resize Nat
@@ -48,8 +49,15 @@ data Instr
     | I_move Reg Reg
     | I_dup Reg Reg
     | I_advance Nat
+
+    -- passive nodes:
     | I_sum Reg
     | I_prod Reg
+
+    -- active nodes:
+    | I_env_make Reg Reg Double
+    | I_env_const Reg Double
+    | I_env_lin Reg Double Double
   deriving (Eq, Show)
 
 -- }}}
@@ -79,8 +87,13 @@ bInstr x = case x of
     I_move s d          -> bNat 4 <> bNat s <> bNat d
     I_dup s d           -> bNat 5 <> bNat s <> bNat d
     I_advance t         -> bNat 6 <> bNat t
-    I_sum r             -> bNat 7 <> bNat r
-    I_prod r            -> bNat 8 <> bNat r
+
+    I_sum r             -> bNat 8 <> bNat r
+    I_prod r            -> bNat 9 <> bNat r
+
+    I_env_make r out x0 -> bNat 16 <> bNat r <> bNat out <> bDbl x0
+    I_env_const r x0    -> bNat 17 <> bNat r <> bDbl x0
+    I_env_lin r x1 t    -> bNat 18 <> bNat r <> bDbl x1 <> bDbl t
 
 -- }}}
 
