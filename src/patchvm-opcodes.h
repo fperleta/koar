@@ -110,7 +110,7 @@ END
 
 // }}}
 
-// (22 - 25) envs {{{
+// (22 - 27) envs {{{
 
 OPCODE (22, "env/make", env_make)
     ARG (A_ANYREG, "self")
@@ -133,6 +133,27 @@ OPCODE (25, "env/xdec", env_xdec)
     ARG (A_REG + T_ENV, "self")
     ARG (A_DOUBLE, "xinf")
     ARG (A_DOUBLE, "tau")
+END
+
+OPCODE (26, "reserved", nop)
+END
+
+OPCODE (27, "reserved", nop)
+END
+
+// }}}
+
+// (28 - 29) phasors {{{
+
+OPCODE (28, "phasor/make", phasor_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (29, "phasor/jump", phasor_jump)
+    ARG (A_REG + T_PHASOR, "self")
+    ARG (A_DOUBLE, "phase")
 END
 
 // }}}

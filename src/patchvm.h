@@ -19,6 +19,7 @@ typedef enum {
     T_FWRITER1,
     T_FWRITER2,
     T_ENV,
+    T_PHASOR,
 
     NUM_REGTAGS
 } regtag_t;
