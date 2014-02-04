@@ -6,7 +6,7 @@
 
 #include "buf.h"
 #include "patchvm.h"
-#include "nodes/wire.h"
+#include "nodes/active.h"
 
 // state {{{
 
@@ -19,16 +19,6 @@ struct wire_s {
 // }}}
 
 // callbacks {{{
-
-static void
-wire_init (patch_t p UNUSED, anode_t an UNUSED)
-{
-}
-
-static void
-wire_exit (anode_t an UNUSED)
-{
-}
 
 static void
 wire_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
@@ -48,8 +38,8 @@ wire_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 wire_ainfo = {
-    .init = wire_init,
-    .exit = wire_exit,
+    .init = NULL,
+    .exit = NULL,
     .tick = wire_tick,
     .ins = 1,
     .outs = 1,

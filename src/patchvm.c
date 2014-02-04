@@ -85,7 +85,7 @@ typedef struct {
 static const opcode_t opcodes[] = {
 #define OPCODE(opc, name, code) \
     { opc, name, {
-#define ARG(tag) \
+#define ARG(tag, name) \
     tag,
 #define END \
     A_STOP } },
@@ -396,7 +396,7 @@ free_instr (instr_t instr)
 
 #define OPCODE(opc, name, code) \
     extern void PATCHVM_ ## code (patchvm_t, instr_t);
-#define ARG(tag)
+#define ARG(tag, name)
 #define END
 #include "patchvm-opcodes.h"
 #undef OPCODE
@@ -406,7 +406,7 @@ free_instr (instr_t instr)
 static patchvm_opcode_t dispatch[] = {
 #define OPCODE(opc, name, code) \
     PATCHVM_ ## code,
-#define ARG(tag)
+#define ARG(tag, name)
 #define END
 #include "patchvm-opcodes.h"
 #undef OPCODE

@@ -5,7 +5,7 @@ all:	koar
 
 include config.mk
 
-NODES_OBJS=env fwriter passive wire
+NODES_OBJS=cos2pi env fwriter passive phasor wire
 KOAR_OBJS=buf main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \

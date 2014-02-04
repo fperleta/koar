@@ -120,6 +120,14 @@ buf_scale (buf_t b, buf_t src, samp_t s, size_t n)
         b.x4s[i] = s * src.x4s[i];
 }
 
+MACRO void
+buf_cos2pi (buf_t b, buf_t src, size_t n)
+{
+    size_t i;
+    for (i = 0; 4 < n; i++)
+        b.xs[i] = cos ((2 * (float) M_PI) * src.xs[i]);
+}
+
 #endif /* koar/buf.h */
 
 // vim:fdm=marker:
