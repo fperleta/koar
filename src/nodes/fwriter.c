@@ -8,7 +8,7 @@
 #include <sndfile.h>
 #include "buf.h"
 #include "patchvm.h"
-#include "fwriter.h"
+#include "nodes/active.h"
 
 // state {{{
 

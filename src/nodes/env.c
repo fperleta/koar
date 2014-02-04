@@ -6,7 +6,7 @@
 
 #include "buf.h"
 #include "patchvm.h"
-#include "nodes/env.h"
+#include "nodes/active.h"
 
 // state {{{
 
