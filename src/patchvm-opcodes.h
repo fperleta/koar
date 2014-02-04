@@ -118,4 +118,10 @@ OPCODE (25, "env/lin", env_lin)
     ARG (A_DOUBLE)
 END
 
+OPCODE (26, "env/xdec", env_xdec)
+    ARG (A_REG + T_ENV)
+    ARG (A_DOUBLE)
+    ARG (A_DOUBLE)
+END
+
 // vim:fdm=marker:

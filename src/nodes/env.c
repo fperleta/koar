@@ -12,7 +12,8 @@
 
 typedef enum {
     ENV_CONST = 0,
-    ENV_LIN
+    ENV_LIN,
+    ENV_XDEC
 } env_mode_t;
 
 typedef struct env_s* env_t;
@@ -66,6 +67,10 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
                     env->t = 0;
                 }
             }
+            break;
+
+        case ENV_XDEC:
+            env->x0 = buf_xdec (b, env->x0, env->x1, env->t, delta);
             break;
 
         default:
@@ -163,6 +168,32 @@ PATCHVM_env_lin (patchvm_t vm, instr_t instr)
     double x1 = instr->args[1].dbl;
     double t = instr->args[2].dbl;
     N_env_lin (an, x1, t);
+}
+
+// }}}
+
+// xdec {{{
+
+void
+N_env_xdec (anode_t an, samp_t xinf, double tau)
+{
+    anode_lock (an);
+
+    env_t env = anode_state (an);
+    env->mode = ENV_XDEC;
+    env->x1 = xinf;
+    env->t = tau;
+
+    anode_unlock (an);
+}
+
+void
+PATCHVM_env_xdec (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    double xinf = instr->args[1].dbl;
+    double tau = instr->args[2].dbl;
+    N_env_xdec (an, xinf, tau);
 }
 
 // }}}
