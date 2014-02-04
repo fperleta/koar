@@ -21,16 +21,6 @@ struct phasor_s {
 // callbacks {{{
 
 static void
-phasor_init (patch_t p UNUSED, anode_t an UNUSED)
-{
-}
-
-static void
-phasor_exit (anode_t an UNUSED)
-{
-}
-
-static void
 phasor_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 {
     phasor_t ph = anode_state (an);
@@ -57,8 +47,8 @@ phasor_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 phasor_ainfo = {
-    .init = phasor_init,
-    .exit = phasor_exit,
+    .init = NULL,
+    .exit = NULL,
     .tick = phasor_tick,
     .ins = 1,
     .outs = 1,

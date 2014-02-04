@@ -33,11 +33,6 @@ fwriter_close (fwriter_t fw)
 // callbacks {{{
 
 static void
-fwriter_init (patch_t p UNUSED, anode_t an UNUSED)
-{
-}
-
-static void
 fwriter_exit (anode_t an)
 {
     fwriter_close (anode_state (an));
@@ -91,7 +86,7 @@ fwriter2_tick (patch_t p UNUSED, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 fwriter1_ainfo = {
-    .init = fwriter_init,
+    .init = NULL,
     .exit = fwriter_exit,
     .tick = fwriter1_tick,
     .ins = 1,
@@ -101,7 +96,7 @@ fwriter1_ainfo = {
 
 static struct ainfo_s
 fwriter2_ainfo = {
-    .init = fwriter_init,
+    .init = NULL,
     .exit = fwriter_exit,
     .tick = fwriter2_tick,
     .ins = 2,

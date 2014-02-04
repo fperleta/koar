@@ -340,7 +340,8 @@ anode_create (patch_t p, ainfo_t info)
     for (i = 0; i < info->ins + info->outs; i++)
         an->refs[i] = NULL;
 
-    info->init (p, an);
+    if (info->init)
+        info->init (p, an);
 
     if (!info->ins)
     {
@@ -355,7 +356,8 @@ static void
 anode_destroy (anode_t an)
 {
     pthread_mutex_lock (&(an->mutex));
-    an->info->exit (an);
+    if (an->info->exit)
+        an->info->exit (an);
     if (an->root_patch)
         patch_unroot (an->root_patch, an);
     pthread_mutex_unlock (&(an->mutex));
@@ -589,7 +591,8 @@ pnode_read (pnode_t pn, patch_stamp_t now)
     patch_datum_t x = pn->state;
     if (!(--pn->toread))
     {
-        pn->info->dispose (pn->state);
+        if (pn->info->dispose)
+            pn->info->dispose (pn->state);
         pn->state = pn->info->neutral;
     }
 

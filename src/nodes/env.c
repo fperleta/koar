@@ -30,16 +30,6 @@ struct env_s {
 // callbacks {{{
 
 static void
-env_init (patch_t p UNUSED, anode_t an UNUSED)
-{
-}
-
-static void
-env_exit (anode_t an UNUSED)
-{
-}
-
-static void
 env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 {
     env_t env = anode_state (an);
@@ -83,8 +73,8 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 env_ainfo = {
-    .init = env_init,
-    .exit = env_exit,
+    .init = NULL,
+    .exit = NULL,
     .tick = env_tick,
     .ins = 0,
     .outs = 1,
