@@ -119,7 +119,7 @@ MACRO void patch_unlock (patch_t p)
 
 extern void patch_root (patch_t, anode_t);
 extern void patch_unroot (patch_t, anode_t);
-extern void patch_tick (patch_t, size_t);
+extern void patch_advance (patch_t, size_t);
 
 // patch protocol:
 // 1. create a patch;

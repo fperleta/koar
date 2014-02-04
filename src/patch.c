@@ -260,7 +260,7 @@ activate (patch_t p, anode_t an)
     pthread_mutex_unlock (&(p->mutex));
 }
 
-void
+static void
 patch_tick (patch_t p, size_t delta)
 {
     /* activate the roots */ {
@@ -298,6 +298,18 @@ patch_tick (patch_t p, size_t delta)
         p->now += p->delta;
 
         patch_unlock (p);
+    }
+}
+
+void
+patch_advance (patch_t p, size_t delta)
+{
+    size_t t, dt;
+
+    for (t = 0; t < delta; t += dt)
+    {
+        dt = (delta - t < BUF_SAMPLES)? delta - t : BUF_SAMPLES;
+        patch_tick (p, dt);
     }
 }
 
