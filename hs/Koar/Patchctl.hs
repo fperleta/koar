@@ -74,6 +74,14 @@ data Instr
     | I_env_make Reg Reg Double
     | I_env_const Reg Double
     | I_env_lin Reg Double Double
+    | I_env_xdec Reg Double Double
+
+    -- phasors:
+    | I_phasor_make Reg Reg Reg
+    | I_phasor_jump Reg Double
+
+    -- cos2pis:
+    | I_cos2pi_make Reg Reg Reg
   deriving (Eq, Show)
 
 -- }}}
@@ -123,6 +131,12 @@ bInstr x = case x of
     I_env_make r out x0         -> bNat 22 <> bNat r <> bNat out <> bDbl x0
     I_env_const r x0            -> bNat 23 <> bNat r <> bDbl x0
     I_env_lin r x1 t            -> bNat 24 <> bNat r <> bDbl x1 <> bDbl t
+    I_env_xdec r xinf tau       -> bNat 25 <> bNat r <> bDbl xinf <> bDbl tau
+
+    I_phasor_make r src snk     -> bNat 28 <> bNat r <> bNat src <> bNat snk
+    I_phasor_jump r phase       -> bNat 29 <> bNat r <> bDbl phase
+
+    I_cos2pi_make r src snk     -> bNat 30 <> bNat r <> bNat src <> bNat snk
 
 -- }}}
 

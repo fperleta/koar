@@ -81,6 +81,8 @@ data Kind
     | FW1
     | FW2
     | Env
+    | Phasor
+    | Cos2pi
 
 data Tag :: Kind -> * where
     TagP :: Tag P
@@ -88,6 +90,8 @@ data Tag :: Kind -> * where
     TagFW1 :: Tag FW1
     TagFW2 :: Tag FW2
     TagEnv :: Tag Env
+    TagPhasor :: Tag Phasor
+    TagCos2pi :: Tag Cos2pi
 
 -- }}}
 
@@ -99,6 +103,8 @@ data Ref :: * -> Kind -> * where
     Rfw1 :: Int -> Ref s FW1
     Rfw2 :: Int -> Ref s FW2
     Renv :: Int -> Ref s Env
+    Rphasor :: Int -> Ref s Phasor
+    Rcos2pi :: Int -> Ref s Cos2pi
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
@@ -107,6 +113,8 @@ refFromInt tag n = case tag of
     TagFW1 -> Rfw1 n
     TagFW2 -> Rfw2 n
     TagEnv -> Renv n
+    TagPhasor -> Rphasor n
+    TagCos2pi -> Rcos2pi n
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
@@ -115,6 +123,8 @@ refToInt r = case r of
     Rfw1 k -> k
     Rfw2 k -> k
     Renv k -> k
+    Rphasor k -> k
+    Rcos2pi k -> k
 
 -- }}}
 
@@ -126,10 +136,12 @@ data RefMap s a = RefMap
     , refmFW1 :: IntMap a
     , refmFW2 :: IntMap a
     , refmEnv :: IntMap a
+    , refmPhasor :: IntMap a
+    , refmCos2pi :: IntMap a
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap e e e e e
+refmEmpty = RefMap e e e e e e e
   where
     e = IM.empty
 
@@ -140,6 +152,8 @@ refmInsert r x rm = case r of
     Rfw1 k -> rm { refmFW1 = IM.insert k x $ refmFW1 rm }
     Rfw2 k -> rm { refmFW2 = IM.insert k x $ refmFW2 rm }
     Renv k -> rm { refmEnv = IM.insert k x $ refmEnv rm }
+    Rphasor k -> rm { refmPhasor = IM.insert k x $ refmPhasor rm }
+    Rcos2pi k -> rm { refmCos2pi = IM.insert k x $ refmCos2pi rm }
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
@@ -148,6 +162,8 @@ refmLookup r rm = case r of
     Rfw1 k -> IM.lookup k $ refmFW1 rm
     Rfw2 k -> IM.lookup k $ refmFW2 rm
     Renv k -> IM.lookup k $ refmEnv rm
+    Rphasor k -> IM.lookup k $ refmPhasor rm
+    Rcos2pi k -> IM.lookup k $ refmCos2pi rm
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
@@ -156,6 +172,8 @@ refmDelete r rm = case r of
     Rfw1 k -> rm { refmFW1 = IM.delete k $ refmFW1 rm }
     Rfw2 k -> rm { refmFW2 = IM.delete k $ refmFW2 rm }
     Renv k -> rm { refmEnv = IM.delete k $ refmEnv rm }
+    Rphasor k -> rm { refmPhasor = IM.delete k $ refmPhasor rm }
+    Rcos2pi k -> rm { refmCos2pi = IM.delete k $ refmCos2pi rm }
 
 -- }}}
 
@@ -167,10 +185,12 @@ data RefSet s = RefSet
     , refsFW1 :: IntSet
     , refsFW2 :: IntSet
     , refsEnv :: IntSet
+    , refsPhasor :: IntSet
+    , refsCos2pi :: IntSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet e e e e e
+refsEmpty = RefSet e e e e e e e
   where
     e = IS.empty
 
@@ -181,6 +201,8 @@ refsInsert r rs = case r of
     Rfw1 k -> rs { refsFW1 = IS.insert k $ refsFW1 rs }
     Rfw2 k -> rs { refsFW2 = IS.insert k $ refsFW2 rs }
     Renv k -> rs { refsEnv = IS.insert k $ refsEnv rs }
+    Rphasor k -> rs { refsPhasor = IS.insert k $ refsPhasor rs }
+    Rcos2pi k -> rs { refsCos2pi = IS.insert k $ refsCos2pi rs }
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
@@ -189,6 +211,8 @@ refsMember r rs = case r of
     Rfw1 k -> IS.member k $ refsFW1 rs
     Rfw2 k -> IS.member k $ refsFW2 rs
     Renv k -> IS.member k $ refsEnv rs
+    Rphasor k -> IS.member k $ refsPhasor rs
+    Rcos2pi k -> IS.member k $ refsCos2pi rs
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
@@ -197,6 +221,8 @@ refsFor rs f = do
     mapM_ (f . Rfw1) . IS.toList $ refsFW1 rs
     mapM_ (f . Rfw2) . IS.toList $ refsFW2 rs
     mapM_ (f . Renv) . IS.toList $ refsEnv rs
+    mapM_ (f . Rphasor) . IS.toList $ refsPhasor rs
+    mapM_ (f . Rcos2pi) . IS.toList $ refsCos2pi rs
 
 -- }}}
 

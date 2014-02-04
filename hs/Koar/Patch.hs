@@ -111,6 +111,46 @@ envLin r x1 t = event $ do
     reg <- regE r
     genE . emit $ I_env_lin reg x1 t
 
+envXdec :: Ref s Env -> Double -> Double -> Score s ()
+envXdec r xinf tau = event $ do
+    reg <- regE r
+    genE . emit $ I_env_xdec reg xinf tau
+
+-- }}}
+
+-- phasor {{{
+
+phasorMake :: Ref s P -> Ref s P -> Score s (Ref s Phasor)
+phasorMake src snk = do
+    r <- freshRef TagPhasor
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regSnk <- regE snk
+        genE . emit $ I_phasor_make reg regSrc regSnk
+    return r
+
+phasorJump :: Ref s Phasor -> Double -> Score s ()
+phasorJump self phase = event $ do
+    reg <- regE self
+    genE . emit $ I_phasor_jump reg phase
+
+-- }}}
+
+-- cos2pi {{{
+
+cos2piMake :: Ref s P -> Ref s P -> Score s (Ref s Cos2pi)
+cos2piMake src snk = do
+    r <- freshRef TagCos2pi
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regSnk <- regE snk
+        genE . emit $ I_cos2pi_make reg regSrc regSnk
+    return r
+
 -- }}}
 
 -- vim:fdm=marker:
