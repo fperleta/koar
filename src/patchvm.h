@@ -15,6 +15,9 @@
 typedef enum {
     T_BLANK = 0,
     T_PNODE,
+    T_WIRE,
+    T_FWRITER1,
+    T_FWRITER2,
     T_ENV,
 
     NUM_REGTAGS
@@ -25,6 +28,7 @@ typedef enum {
     A_NAT,
     A_INT,
     A_DOUBLE,
+    A_UTF8,
     // keep these two at the end.
     A_ANYREG,
     A_REG
@@ -47,6 +51,7 @@ typedef struct {
         int int_;
         unsigned reg;
         double dbl;
+        uint8_t* utf8;
     };
 } arg_t;
 
@@ -70,11 +75,12 @@ extern patch_t patchvm_patch (patchvm_t);
 extern int patchvm_failed (patchvm_t);
 extern int patchvm_leaving (patchvm_t);
 
-extern void patchvm_blank (patchvm_t vm, unsigned);
-extern reg_t patchvm_get (patchvm_t vm, unsigned);
-extern void patchvm_set (patchvm_t vm, unsigned, reg_t);
+extern void patchvm_fail (patchvm_t);
+extern void patchvm_blank (patchvm_t, unsigned);
+extern reg_t patchvm_get (patchvm_t, unsigned);
+extern void patchvm_set (patchvm_t, unsigned, reg_t);
 
-extern void patchvm_exec (patchvm_t vm, const uint8_t*, size_t);
+extern void patchvm_exec (patchvm_t, const uint8_t*, size_t);
 
 #endif /* koar/patchvm.h */
 

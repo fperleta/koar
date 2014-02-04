@@ -60,6 +60,13 @@ used for nodes.
 for passive nodes, both readers and writers are counted, as well as any
 external references held by the controlling thread.
 
+when an anode writes a buf to a pnode, it should ensure that the pnode has
+complete control over it, ie. that the refcount is 1, and the buf isn't
+modified afterwards.
+
+bufs read from source pnodes must never be modified, and must be released
+when no longer needed.
+
 *******************************************************************************/
 // }}}
 
@@ -83,6 +90,8 @@ worker (void* arg)
 {
     patch_t p = (patch_t) arg;
     pthread_t self = pthread_self ();
+
+    pthread_detach (self);
 
     pthread_mutex_lock (&(p->mutex));
 
@@ -251,7 +260,7 @@ activate (patch_t p, anode_t an)
     pthread_mutex_unlock (&(p->mutex));
 }
 
-void
+static void
 patch_tick (patch_t p, size_t delta)
 {
     /* activate the roots */ {
@@ -289,6 +298,18 @@ patch_tick (patch_t p, size_t delta)
         p->now += p->delta;
 
         patch_unlock (p);
+    }
+}
+
+void
+patch_advance (patch_t p, size_t delta)
+{
+    size_t t, dt;
+
+    for (t = 0; t < delta; t += dt)
+    {
+        dt = (delta - t < BUF_SAMPLES)? delta - t : BUF_SAMPLES;
+        patch_tick (p, dt);
     }
 }
 
@@ -574,7 +595,7 @@ pnode_read (pnode_t pn, patch_stamp_t now)
 
     pthread_mutex_unlock (&(pn->mutex));
 
-    return x;
+    return pn->info->pass (x);
 }
 
 static void
@@ -583,7 +604,10 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
     pthread_mutex_lock (&(an->mutex));
 
     if (an->stamp != now)
+    {
         an->waiting = an->sources;
+        an->stamp = now;
+    }
 
     if (!(--an->waiting))
         activate (p, an);

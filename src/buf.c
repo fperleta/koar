@@ -48,7 +48,7 @@ buf_alloc (bufpool_t pool)
         panic ("bufpool overflow");
 
     size_t i;
-    for (i = BUFPOOL_HEAD; (i < BUFPOOL_TOTAL) && pool->rc[i]; i++)
+    for (i = BUFPOOL_HEAD; (i < BUFPOOL_TOTAL) && pool->rc[i]; i++);
     pool->rc[i] = 1;
     pool->free--;
 
