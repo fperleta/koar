@@ -11,6 +11,12 @@
 #include "patch.h"
 #include "defs.h"
 
+// cos2pis {{{
+
+extern anode_t N_cos2pi_make (patch_t, pnode_t, pnode_t);
+
+// }}}
+
 // envs {{{
 
 extern anode_t N_env_make (patch_t, pnode_t, samp_t);

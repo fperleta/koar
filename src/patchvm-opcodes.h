@@ -158,4 +158,17 @@ END
 
 // }}}
 
+// (30 - 31) cos2pis {{{
+
+OPCODE (30, "cos2pi/make", cos2pi_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (31, "reserved", nop)
+END
+
+// }}}
+
 // vim:fdm=marker:
