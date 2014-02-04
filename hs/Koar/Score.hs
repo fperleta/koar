@@ -43,6 +43,8 @@ module Koar.Score
     , event
     , here
     , frame
+    , sampleRate
+    , toPeriods
 
     ) where
 -- }}}
@@ -381,7 +383,8 @@ data Scr s = Scr
     }
 
 data Here s = Here
-    { hereT0 :: {-# UNPACK #-} !Secs
+    { hereRate :: {-# UNPACK #-} !Int
+    , hereT0 :: {-# UNPACK #-} !Secs
     , hereDT :: {-# UNPACK #-} !Secs
     , hereFrame :: {-# UNPACK #-} !(FRef s)
     }
@@ -414,15 +417,16 @@ instance Monad (Score s) where
 
 -- running {{{
 
-runScore :: Rational -> Score s () -> Gen ()
-runScore srHertz x = esGen srHertz end $ case unScore x scr0 of
+runScore :: Int -> Score s () -> Gen ()
+runScore srHertz x = esGen (fromIntegral srHertz) end $ case unScore x scr0 of
     (_, _, es) -> es
   where
     end = endE (FRef 0)
     scr0 = Scr
         { scrNext = 1
         , scrHere = Here
-            { hereT0 = 0
+            { hereRate = srHertz
+            , hereT0 = 0
             , hereDT = 1
             , hereFrame = FRef 0
             }
@@ -476,6 +480,16 @@ frame t x = do
     x' <- localHere (\h -> h { hereFrame = fr }) x
     shift t . event $ endE fr
     return x'
+
+sampleRate :: Score s Int
+sampleRate = Score $ \s -> (hereRate $ scrHere s, s, Stop)
+
+-- }}}
+
+-- utilities {{{
+
+toPeriods :: Secs -> Score s Rational
+toPeriods (Secs k) = (k *) . fromIntegral <$> sampleRate
 
 -- }}}
 

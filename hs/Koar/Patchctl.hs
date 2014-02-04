@@ -20,6 +20,9 @@ module Koar.Patchctl
     , allocReg
     , freeReg
 
+    -- client
+    , runInstrs
+
     ) where
 -- }}}
 
@@ -203,9 +206,6 @@ freeReg r = Gen $ \fr is -> ((), putFReg r fr, is)
 -- }}}
 
 -- client {{{
-
-numberOfRetries :: Int
-numberOfRetries = 1
 
 runInstrs :: HostName -> PortNumber -> [Instr] -> IO ()
 runInstrs host port is = runDirectT host port goFree
