@@ -111,7 +111,7 @@ bound_on_message (peer_t self, proto_msg_t msg)
 
     if (patchvm_failed (ctl->vm))
         error_enter (self, "vm", "Virtual machine error.");
-    if (patchvm_leaving (ctl->vm))
+    else if (patchvm_leaving (ctl->vm))
         free_enter (ctl);
 }
 
@@ -170,8 +170,10 @@ patchctl_on_message (peer_t self, proto_msg_t msg)
 }
 
 static void
-patchctl_on_shutdown (peer_t self UNUSED)
+patchctl_on_shutdown (peer_t self)
 {
+    patchctl_t ctl = peer_get_state (self);
+    patchctl_destroy (ctl, 1);
 }
 
 // }}}
