@@ -12,6 +12,7 @@ module Koar.Proto
     -- the direct monad.
     , DirectT()
     , runDirectT
+    , runDirectT'
     , noReply
     , withReply
     , pushReply
@@ -130,8 +131,16 @@ data PeerState m = PeerState
     , psBuffer :: [Message]
     }
 
-runDirectT :: (MonadIO m) => Socket -> DirectT m a -> m a
-runDirectT sock x = evalStateT (runReaderT (unDirectT x) sock) $ PeerState 1 IM.empty []
+runDirectT' :: (MonadIO m) => Socket -> DirectT m a -> m a
+runDirectT' sock x = evalStateT (runReaderT (unDirectT x) sock) $ PeerState 1 IM.empty []
+
+runDirectT :: (MonadIO m) => HostName -> PortNumber -> DirectT m a -> m a
+runDirectT host port action = do
+    let hints = defaultHints { addrFlags = [AI_CANONNAME], addrSocketType = Stream }
+    addr:_ <- liftIO $ getAddrInfo (Just hints) (Just host) Nothing
+    sock <- liftIO $ socket (addrFamily addr) Stream (addrProtocol addr)
+    liftIO $ connect sock (addrAddress addr)
+    runDirectT' sock action
 
 bufferedMsgs = 10
 

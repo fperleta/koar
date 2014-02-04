@@ -1,5 +1,5 @@
 -- extensions {{{
--- {-# LANGUAGE #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- }}}
 
 -- exports {{{
@@ -33,6 +33,9 @@ import           Data.IntSet (IntSet)
 import qualified Data.IntSet as IS
 import           Data.Monoid
 import           Data.Word
+import           Network.Socket (HostName, PortNumber)
+
+import           Koar.Proto
 -- }}}
 
 -- basic types {{{
@@ -196,6 +199,23 @@ allocReg = Gen $ \fr is -> case getFReg fr of
 
 freeReg :: Reg -> Gen ()
 freeReg r = Gen $ \fr is -> ((), putFReg r fr, is)
+
+-- }}}
+
+-- client {{{
+
+numberOfRetries :: Int
+numberOfRetries = 1
+
+runInstrs :: HostName -> PortNumber -> [Instr] -> IO ()
+runInstrs host port is = runDirectT host port goFree
+  where
+    goFree = withReply "patch" $ \reply ->
+        if reply == "okay"
+        then goBound
+        else goFree
+
+    goBound = forM_ is $ noReply . toLazyByteString . bInstr
 
 -- }}}
 
