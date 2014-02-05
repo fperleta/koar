@@ -468,6 +468,12 @@ freshRef tag = Score $ \s ->
         s' = s { scrNext = succ n }
     in case tag of
         TagP -> (Rp n, s', Stop)
+        TagWire -> (Rwire n, s', Stop)
+        TagFW1 -> (Rfw1 n, s', Stop)
+        TagFW2 -> (Rfw2 n, s', Stop)
+        TagEnv -> (Renv n, s', Stop)
+        TagPhasor -> (Rphasor n, s', Stop)
+        TagCos2pi -> (Rcos2pi n, s', Stop)
 
 freshFRef :: Score s (FRef s)
 freshFRef = Score $ \s ->

@@ -221,8 +221,8 @@ freeReg r = Gen $ \fr is -> ((), putFReg r fr, is)
 
 -- client {{{
 
-runInstrs :: HostName -> PortNumber -> [Instr] -> IO ()
-runInstrs host port is = runDirectT host port goFree
+runInstrs :: String -> [Instr] -> IO ()
+runInstrs endpoint is = runDirectT endpoint goFree
   where
     goFree = withReply "patch" $ \reply ->
         if reply == "okay"
