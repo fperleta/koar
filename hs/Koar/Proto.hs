@@ -46,10 +46,12 @@ data Message = Message
     { msgHead :: !Head
     , msgBody :: ByteString
     }
+  deriving (Show)
 
 data Head
     = Msg !Word32
     | Reply !Word32
+  deriving (Show)
 
 -- }}}
 
@@ -110,7 +112,9 @@ sendMsgs sock = sendAll sock . LB.concat . concatMap (\m ->
 recvMsg :: Socket -> IO Message
 recvMsg sock = do
     Just (hd, len) <- unmarshall umPfx `liftM` recv sock 8
+    print (hd, len)
     body <- recv sock $ fromIntegral len
+    print body
     if LB.length body /= len
         then fail "truncated message"
         else return $ Message hd body
@@ -123,7 +127,7 @@ newtype DirectT m a = DirectT
     { unDirectT :: ReaderT Socket
                     (StateT (PeerState m) m) a
     }
-  deriving (Functor, Monad)
+  deriving (Functor, Monad, MonadIO)
 
 data PeerState m = PeerState
     { psNextSerial :: Word32
@@ -138,11 +142,15 @@ runDirectT :: (MonadIO m) => String -> DirectT m a -> m a
 runDirectT endpoint action = do
     let hints = defaultHints { addrFlags = [AI_CANONNAME, AI_NUMERICSERV], addrSocketType = Stream }
     let (host, _:port) = break (==':') endpoint
-    addr:_ <- liftIO $ getAddrInfo (Just hints) (Just host) (Just port)
-    liftIO $ print addr
-    sock <- liftIO $ socket (addrFamily addr) Stream (addrProtocol addr)
-    liftIO $ connect sock (addrAddress addr)
-    runDirectT' sock action
+    sock <- liftIO $ do
+        addr:_ <- getAddrInfo (Just hints) (Just host) (Just port)
+        sock <- socket (addrFamily addr) Stream (addrProtocol addr)
+        setSocketOption sock KeepAlive 1
+        connect sock (addrAddress addr)
+        return sock
+    res <- runDirectT' sock action
+    liftIO $ close sock
+    return res
 
 bufferedMsgs = 10
 
@@ -170,6 +178,7 @@ pullMsg = DirectT $ do
     sock <- ask
     hooks <- gets psHooks
     m <- liftIO $ recvMsg sock
+    liftIO . print $ msgHead m
     case msgHead m of
         Msg _ -> return m
         Reply k -> case IM.lookup (fromEnum k) hooks of
@@ -178,7 +187,9 @@ pullMsg = DirectT $ do
                 unDirectT $ do
                     hook $ msgBody m
                     pullMsg
-            Nothing -> unDirectT pullMsg
+            Nothing -> do
+                liftIO . putStrLn $ "excepted reply " ++ show k
+                unDirectT pullMsg
 
 flushMsgs :: (MonadIO m) => DirectT m ()
 flushMsgs = DirectT $ do

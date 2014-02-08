@@ -27,6 +27,7 @@ cos2pi_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 cos2pi_ainfo = {
+    .name = "cos2pi",
     .init = NULL,
     .exit = NULL,
     .tick = cos2pi_tick,

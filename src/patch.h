@@ -149,6 +149,7 @@ struct anode_s {
 } PATCH_ALIGNED;
 
 struct ainfo_s {
+    const char* name;
     anode_init_t init;
     anode_exit_t exit;
     anode_tick_t tick;
@@ -209,7 +210,7 @@ extern void anode_sink (anode_t, size_t, pnode_t);
 // passive nodes {{{
 
 typedef patch_datum_t (*pnode_combine_t) (patch_t, patch_datum_t, patch_datum_t);
-typedef patch_datum_t (*pnode_pass_t) (patch_datum_t);
+typedef patch_datum_t (*pnode_pass_t) (patch_t, patch_datum_t);
 typedef void (*pnode_dispose_t) (patch_datum_t);
 
 struct pnode_s {
@@ -224,6 +225,7 @@ struct pnode_s {
         anode_t* readers;
     };
     patch_datum_t state;
+    patch_t patch;
 } PATCH_ALIGNED;
 
 struct pinfo_s {
@@ -233,7 +235,7 @@ struct pinfo_s {
     pnode_dispose_t dispose;
 } PATCH_ALIGNED;
 
-extern pnode_t pnode_create (pinfo_t); // refcount = 1
+extern pnode_t pnode_create (patch_t, pinfo_t); // refcount = 1
 extern pnode_t pnode_acquire (pnode_t);
 extern void pnode_release (pnode_t);
 

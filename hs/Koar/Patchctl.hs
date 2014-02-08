@@ -28,6 +28,7 @@ module Koar.Patchctl
 
 -- imports {{{
 import           Control.Monad
+import           Control.Monad.IO.Class
 import           Data.Bits
 import           Data.ByteString.Builder
 import           Data.ByteString.Lazy (ByteString)
@@ -212,24 +213,57 @@ allocReg = Gen $ \fr is -> case getFReg fr of
         ; gen = emit (I_resize $ toEnum size) >> allocReg
         } in unGen gen (growFRegs regsChunk fr) is
   where
-    regsChunk = 4
+    regsChunk = 64
 
 freeReg :: Reg -> Gen ()
 freeReg r = Gen $ \fr is -> ((), putFReg r fr, is)
 
 -- }}}
 
+-- chunking {{{
+
+chunkInstrs :: Nat -> [Instr] -> [[Instr]]
+chunkInstrs smallest = go 0 []
+  where
+    go :: Nat -> [Instr] -> [Instr] -> [[Instr]]
+    go t buf is = case is of
+        [] -> [reverse buf]
+        i@(I_advance dt) : is'
+            | t + dt >= smallest -> reverse (i : buf) : go 0 [] is'
+            | otherwise -> go (t + dt) (i : buf) is'
+        i : is' -> go t (i : buf) is'
+
+-- }}}
+
 -- client {{{
 
 runInstrs :: String -> [Instr] -> IO ()
-runInstrs endpoint is = runDirectT endpoint goFree
+runInstrs endpoint is = runDirectT endpoint $ do
+    goFree
+    msg <- pullMsg
+    liftIO . print $ msgBody msg
+    return ()
   where
     goFree = withReply "patch" $ \reply ->
         if reply == "okay"
         then goBound
         else goFree
 
-    goBound = forM_ is $ noReply . toLazyByteString . bInstr
+    goBound = do
+        liftIO $ putStrLn "sending the stream..."
+        let cs = chunkInstrs 48000 is
+        goChunks cs
+
+    goChunks [] = do
+        liftIO $ putStrLn "done."
+    goChunks (c:cs) = do
+        let msg = toLazyByteString . mconcat $ map bInstr c
+        withReply msg $ \reply -> do
+            liftIO $ print reply
+            case cs of
+                []  -> return ()
+                _   | msg == "okay" -> goChunks cs
+                    | otherwise -> goChunks cs
 
 -- }}}
 

@@ -99,11 +99,11 @@ worker (void* arg)
     {
         if (!p->count)
         {
-            log_emit (LOG_DEBUG, "patch worker %d waiting for activations...", self);
+            //log_emit (LOG_DEBUG, "patch worker %d waiting for activations...", self);
             int res = pthread_cond_wait (&(p->nonempty), &(p->mutex));
             if (res)
                 panic ("pthread_cond_wait() returned %d", res);
-            log_emit (LOG_DEBUG, "patch worker %d wakeup", self);
+            //log_emit (LOG_DEBUG, "patch worker %d wakeup", self);
         }
 
         if (p->shutdown)
@@ -120,7 +120,7 @@ worker (void* arg)
         p->working++;
         pthread_mutex_unlock (&(p->mutex));
         pthread_mutex_lock (&(an->mutex));
-        log_emit (LOG_DEBUG, "patch worker %d processing anode %p at time %zu", self, an, now);
+        //log_emit (LOG_DEBUG, "patch worker %p processing anode %p (%s) at time %zu", self, an, an->info->name, now);
         an->info->tick (p, an, now, delta);
         pthread_mutex_unlock (&(an->mutex));
         pthread_mutex_lock (&(p->mutex));
@@ -128,7 +128,7 @@ worker (void* arg)
 
         if (!p->working && !p->count)
         {
-            log_emit (LOG_DEBUG, "patch worker %d broadcasting empty", self);
+            //log_emit (LOG_DEBUG, "patch worker %d broadcasting empty", self);
             pthread_cond_broadcast (&(p->empty));
         }
     }
@@ -528,7 +528,7 @@ done:
 // passive nodes {{{
 
 pnode_t
-pnode_create (pinfo_t info)
+pnode_create (patch_t p, pinfo_t info)
 {
     pnode_t pn = xmalloc (sizeof (struct pnode_s));
     pn->info = info;
@@ -541,6 +541,7 @@ pnode_create (pinfo_t info)
     pn->stamp = (unsigned) -1;
     pn->writers = pn->written = pn->nreaders = pn->toread = 0;
     pn->readers = NULL;
+    pn->patch = p;
 
     return pn;
 }
@@ -598,7 +599,7 @@ pnode_read (pnode_t pn, patch_stamp_t now)
 
     pthread_mutex_unlock (&(pn->mutex));
 
-    return pn->info->pass (x);
+    return pn->info->pass (pn->patch, x);
 }
 
 static void
@@ -658,7 +659,7 @@ pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
         pn->state = x;
     }
 
-    log_emit (LOG_DEBUG, "pnode_write() written %zu/%zu", pn->written, pn->writers);
+    //log_emit (LOG_DEBUG, "pnode_write() written %zu/%zu", pn->written, pn->writers);
 
     check_written (p, pn, now);
 
@@ -679,7 +680,7 @@ pnode_dont_write (patch_t p, pnode_t pn, patch_stamp_t now)
         pn->state = pn->info->neutral;
     }
 
-    log_emit (LOG_DEBUG, "pnode_dont_write() written %zu/%zu", pn->written, pn->writers);
+    //log_emit (LOG_DEBUG, "pnode_dont_write() written %zu/%zu", pn->written, pn->writers);
 
     check_written (p, pn, now);
 

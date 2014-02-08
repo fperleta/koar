@@ -4,6 +4,7 @@
  * copyright (c) 2014 Frano Perleta
  */
 
+#include <stdio.h>
 #include "patchvm.h"
 
 // types {{{
@@ -78,13 +79,12 @@ patchvm_leaving (patchvm_t vm)
 
 typedef struct {
     unsigned opc;
-    const char* name;
     argtag_t tags[MAX_ARGTAGS];
 } opcode_t;
 
 static const opcode_t opcodes[] = {
 #define OPCODE(opc, name, code) \
-    { opc, name, {
+    { opc, {
 #define ARG(tag, name) \
     tag,
 #define END \
@@ -124,9 +124,11 @@ decode_nat (decoder_t dec)
         if (dec->p >= dec->end)
             goto fail;
         b = *(dec->p++);
-        x <<= 1;
+        x <<= 7;
         x |= b & 0x7F;
     } while (b & 0x80);
+
+    return x;
 
 fail:
     dec->fail = 1;
@@ -168,7 +170,11 @@ decode_double (decoder_t dec)
 
     x.u = 0;
     for (i = 0; i < 8; i++)
-        x.u |= ((uint64_t) dec->p[i]) << (i << 3);
+    {
+        x.u <<= 8;
+        x.u |= dec->p[i];
+    }
+    dec->p += 8;
 
     return x.d;
 
@@ -200,6 +206,8 @@ decode_utf8 (decoder_t dec)
     for (i = 0; i < len; i++)
         buf[i] = dec->p[i];
     buf[len] = 0;
+
+    dec->p += len;
 
     return buf;
 
@@ -267,16 +275,16 @@ decode_instr (decoder_t dec)
                     return args;
                 } // }}}
 
-            case A_DOUBLE:
+            case A_DOUBLE: // {{{
                 {
-                    int dbl = decode_double (dec);
+                    double dbl = decode_double (dec);
                     arg_t* args = next_arg (k + 1, tags + 1);
                     if (dec->fail)
                         goto fail;
                     args[k].tag = tag;
                     args[k].dbl = dbl;
                     return args;
-                }
+                } // }}}
 
             case A_UTF8: // {{{
                 {
@@ -390,6 +398,98 @@ free_instr (instr_t instr)
 
 // }}}
 
+// printing {{{
+
+// string tables {{{
+
+static const struct {
+    const char* opc;
+    const char* args[MAX_ARGTAGS];
+} opcode_strings[] = {
+#define OPCODE(opc, name, code) \
+    { name, {
+#define ARG(tag, name) \
+    name,
+#define END \
+    }},
+#include "patchvm-opcodes.h"
+#undef OPCODE
+#undef ARG
+#undef END
+};
+
+static const char* regtag_strings[] = {
+    "blank",
+    "pnode",
+    "wire",
+    "fwriter1",
+    "fwriter2",
+    "env",
+    "phasor",
+    "cos2pi"
+};
+
+#if 0
+static const char* argtag_strings[] = {
+    "stop",
+    "nat",
+    "int",
+    "dbl",
+    "utf8",
+    "reg"
+};
+#endif
+
+// }}}
+
+static int
+snprint_arg (char* buf, size_t size, arg_t arg, argtag_t tag, const char* name)
+{
+    switch (tag)
+    {
+        case A_STOP:
+            return 0;
+
+        case A_NAT:
+            return snprintf (buf, size, "%s=%u:nat", name, arg.nat);
+
+        case A_INT:
+            return snprintf (buf, size, "%s=%d:int", name, arg.int_);
+
+        case A_DOUBLE:
+            return snprintf (buf, size, "%s=%g:dbl", name, arg.dbl);
+
+        case A_UTF8:
+            return snprintf (buf, size, "%s=\"%s\"", name, arg.utf8);
+
+        case A_ANYREG:
+            return snprintf (buf, size, "%s=r%u", name, arg.reg);
+
+        default:
+            return snprintf (buf, size, "%s=r%u:%s", name, arg.reg, regtag_strings[tag - A_REG]);
+    }
+}
+
+static int
+snprint_instr (char* buf, size_t size, instr_t instr)
+{
+    size_t offs = 0;
+
+    offs += snprintf (buf, size, "%s", opcode_strings[instr->opc].opc);
+
+    const argtag_t* tag = opcodes[instr->opc].tags;
+    size_t i;
+    for (i = 0; *tag != A_STOP; tag++, i++)
+    {
+        offs += snprintf (buf + offs, size - offs, "%s ", i? "," : "");
+        offs += snprint_arg (buf + offs, size - offs, instr->args[i], *tag, opcode_strings[instr->opc].args[i]);
+    }
+
+    return offs;
+}
+
+// }}}
+
 // execution {{{
 
 // dispatch table {{{
@@ -439,6 +539,8 @@ patchvm_blank (patchvm_t vm, unsigned reg)
         case T_FWRITER1:
         case T_FWRITER2:
         case T_ENV:
+        case T_PHASOR:
+        case T_COS2PI:
             anode_release (r.an);
             break;
 
@@ -528,6 +630,8 @@ PATCHVM_advance (patchvm_t vm, instr_t instr)
 {
     size_t dt = instr->args[0].nat;
 
+    patch_advance (vm->patch, dt);
+
     vm->now += dt;
 }
 
@@ -550,19 +654,29 @@ patchvm_exec (patchvm_t vm, const uint8_t* buf, size_t len)
         if (dec.fail)
             goto fail_instr;
 
+        char pbuf[1024];
+        snprint_instr (pbuf, 1024, instr);
+        //log_emit (LOG_DETAIL, "decoded: %s", pbuf);
+
+
         struct checker_s chk = { .fail = 0 };
         check_instr (vm, &chk, instr);
         if (chk.fail)
             goto fail_instr;
+
+        log_emit (LOG_DETAIL, "exec: %s", pbuf);
 
         patchvm_opcode_t run = dispatch[instr->opc];
         run (vm, instr);
         if (vm->fail)
             goto fail_instr;
 
+        //log_emit (LOG_DETAIL, "done");
+
         continue;
 
 fail_instr:
+        log_emit (LOG_DETAIL, "fail");
         if (instr)
             free_instr (instr);
         goto fail;

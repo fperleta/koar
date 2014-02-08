@@ -10,8 +10,8 @@
 #include "patch.h"
 #include "defs.h"
 
-extern pnode_t N_sum (void);
-extern pnode_t N_prod (void);
+extern pnode_t N_sum (patch_t);
+extern pnode_t N_prod (patch_t);
 
 #endif /* koar/nodes/passive.h */
 

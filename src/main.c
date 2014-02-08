@@ -71,7 +71,7 @@ xmalloc (size_t s)
     void* p;
 
     p = malloc (s);
-    if (!p)
+    if (!p && s)
         panic ("virtual memory exhausted");
 
     return p;
@@ -81,7 +81,7 @@ void*
 xrealloc (void* p, size_t s)
 {
     p = realloc (p, s);
-    if (!p)
+    if (!p && s)
         panic ("virtual memory exhausted");
 
     return p;

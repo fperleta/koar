@@ -15,8 +15,8 @@ typedef struct proto_msg_s* proto_msg_t;
 typedef struct {
     union {
         struct {
-            uint32_t mid:31;
             unsigned reply:1;
+            uint32_t mid:31;
         } PACKED;
         uint32_t midr;
     } PACKED;

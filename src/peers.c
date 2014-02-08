@@ -144,6 +144,8 @@ queue_put (queue_t* q, proto_msg_t msg)
         qs->next = NULL;
         qs->start = qs->end = 0;
     }
+    else
+        qs = q->last;
 
     qs->msgs[qs->end++] = msg;
 }
@@ -242,7 +244,7 @@ received (peer_t self, proto_msg_t msg)
         cont = cont->next;
     }
 
-    log_emit (LOG_DETAIL, "unexpected reply to message %u", msg->header.mid);
+    log_emit (LOG_DEBUG, "unexpected reply to message %u", msg->header.mid);
     free (msg);
 }
 
@@ -280,9 +282,11 @@ again:
         self->ibuf = xmalloc (self->itotal);
         self->ibuf->header = self->ihead;
 
+#if 0
         DEBUGF ("header: %smid=%lu; bytes=%lu",
                 self->ihead.reply? "reply; " : "",
                 self->ihead.mid, self->ihead.bytes);
+#endif
     }
 
     size_t len = self->itotal - self->ibytes;
@@ -298,7 +302,7 @@ again:
         self->ibuf = NULL;
         self->ibytes = 0;
 
-        log_emit (LOG_DEBUG, "received a message: %u %u %u", msg->header.mid, msg->header.reply, msg->header.bytes);
+        //log_emit (LOG_DEBUG, "received a message: %u %u %u", msg->header.mid, msg->header.reply, msg->header.bytes);
         received (self, msg);
         goto again;
     }
@@ -330,6 +334,7 @@ again:
     self->obytes += (size_t) wlen;
     if (self->obytes == self->ototal)
     {
+        free (self->obuf); // free the sent message
         proto_msg_t msg = self->obuf = queue_get (&(self->oq));
         self->obytes = 0;
         if (self->obuf)
@@ -367,8 +372,8 @@ peer_init (peer_t peer, struct ev_loop* loop, int fd, peer_beh_t beh, void* stat
 peer_t
 peer_connect (struct ev_loop* loop, peer_beh_t beh, void* state, const char* addr)
 {
-    DEBUGP ("%p", beh);
-    DEBUGP ("%s", addr);
+    //DEBUGP ("%p", beh);
+    //DEBUGP ("%s", addr);
 
     struct sockaddr_storage ss;
     socklen_t len;
@@ -483,7 +488,7 @@ static void
 accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
 {
     listener_t self = (listener_t) io;
-    DEBUGP ("%p", self);
+    //DEBUGP ("%p", self);
 
     struct sockaddr_storage sa;
     socklen_t sa_len = sizeof (sa);
@@ -494,7 +499,7 @@ accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
         int fd = accept (io->fd, (struct sockaddr*) &sa, &sa_len);
         if (fd == -1)
             return;
-        DEBUGP ("%hu", fd);
+        //DEBUGP ("%hu", fd);
 
         peer_t peer = xmalloc (sizeof (struct peer_s));
         peer->sa = sa;
@@ -510,8 +515,8 @@ accept_w (struct ev_loop* loop, struct ev_io* io, int revents UNUSED)
 listener_t
 listener_create (struct ev_loop* loop, listener_beh_t beh, void* state, const char* addr)
 {
-    DEBUGP ("%p", beh);
-    DEBUGP ("%s", addr);
+    //DEBUGP ("%p", beh);
+    //DEBUGP ("%s", addr);
 
     struct sockaddr_storage sa;
     socklen_t sa_len = sizeof (sa);
@@ -536,7 +541,7 @@ listener_create (struct ev_loop* loop, listener_beh_t beh, void* state, const ch
         log_emit (LOG_ERROR, "socket (PF_INET, SOCK_STREAM, 0): %s", strerror (errno));
         return NULL;
     }
-    DEBUGP ("%d", fd);
+    //DEBUGP ("%d", fd);
 
     nonblocking (fd);
 

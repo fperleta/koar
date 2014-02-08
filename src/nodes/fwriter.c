@@ -86,6 +86,7 @@ fwriter2_tick (patch_t p UNUSED, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 fwriter1_ainfo = {
+    .name = "fwriter1",
     .init = NULL,
     .exit = fwriter_exit,
     .tick = fwriter1_tick,
@@ -96,6 +97,7 @@ fwriter1_ainfo = {
 
 static struct ainfo_s
 fwriter2_ainfo = {
+    .name = "fwriter2",
     .init = NULL,
     .exit = fwriter_exit,
     .tick = fwriter2_tick,

@@ -36,7 +36,7 @@ phasor_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
     {
         b.xs[i] = phase;
         phase += in.xs[i];
-        phase = phase - floor (phase);
+        phase -= floor (phase);
     }
     ph->phase = phase;
     buf_release (in);
@@ -47,6 +47,7 @@ phasor_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 phasor_ainfo = {
+    .name = "phasor",
     .init = NULL,
     .exit = NULL,
     .tick = phasor_tick,

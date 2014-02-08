@@ -38,6 +38,7 @@ wire_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
 static struct ainfo_s
 wire_ainfo = {
+    .name = "wire",
     .init = NULL,
     .exit = NULL,
     .tick = wire_tick,
