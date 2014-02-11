@@ -122,6 +122,7 @@ worker (void* arg)
         pthread_mutex_lock (&(an->mutex));
         //log_emit (LOG_DEBUG, "patch worker %p processing anode %p (%s) at time %zu", self, an, an->info->name, now);
         an->info->tick (p, an, now, delta);
+        //log_emit (LOG_DEBUG, "patch worker %p done with anode %p (%s) at time %zu", self, an, an->info->name, now);
         pthread_mutex_unlock (&(an->mutex));
         pthread_mutex_lock (&(p->mutex));
         p->working--;
@@ -288,7 +289,7 @@ patch_tick (patch_t p, size_t delta)
     /* wait for the workers */ {
         patch_lock (p);
 
-        if (p->working || p->count)
+        while (p->working || p->count)
         {
             if (p->count)
                 pthread_cond_broadcast (&(p->nonempty));

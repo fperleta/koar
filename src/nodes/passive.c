@@ -49,7 +49,7 @@ sum_pass (patch_t p, patch_datum_t a)
     else
     {
         buf_t b = buf_alloc (p->bufpool);
-        buf_const (b, 0, BUF_SAMPLES);
+        buf_const (b, 0, p->delta);
         patch_datum_t val = { .b = b };
         return val;
     }

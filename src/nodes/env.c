@@ -46,8 +46,7 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
                 size_t t = floor (env->t);
                 size_t n = (delta < t)? delta : t;
                 samp_t d = env->x1 - env->x0;
-                buf_lin (b, env->x0, d / t, n);
-                env->x0 += d * n / t;
+                env->x0 = buf_lin (b, env->x0, d / t, n);
                 env->t -= n;
 
                 if (env->t < 1)
