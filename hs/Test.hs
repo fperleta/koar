@@ -17,7 +17,7 @@ main :: IO ()
 main = runInstrs "127.0.0.1:20350" . runGen $ runScore 48000 score
 
 score :: Score s ()
-score = do
+score = scale (Sec $ 60 / 163) $ do
 
     outL <- makeSum
     outR <- makeSum
@@ -27,14 +27,16 @@ score = do
     wireMake master outL 1
     wireMake master outR 1
 
-    pluck master 440 1 1
-    shift 0.25 $ pluck master 880 0.7 2
+    shift (Cell 0) $ pluck master 1 (Hz 166) (Hz 16) (Sec 0.125)
+    shift (Cell 1) $ pluck master 0.7 (Hz 220) (Hz 133) (Sec 0.15)
+    shift (Cell 2) $ pluck master 1 (Hz 166) (Hz 16) (Sec 0.125)
+    shift (Cell 3) $ pluck master 0.7 (Hz 166) (Hz 16) (Sec 0.125)
 
-pluck :: Ref s P -> Double -> Double -> Units -> Score s ()
-pluck out freq amp dur = frame dur $ do
-    sr <- sampleRate
-    let f0 = freq / realToFrac sr
-    durp <- realToFrac <$> toPeriods (Secs $ unUnits dur)
+pluck :: Ref s P -> Double -> Freq -> Freq -> Time -> Score s ()
+pluck out amp f0 f1 dur = frame dur $ do
+    f0' <- realToFrac <$> toNormFreq f0
+    f1' <- realToFrac <$> toNormFreq f1
+    dur' <- realToFrac <$> toPeriods dur
 
     fc <- makeSum
     pc <- makeSum
@@ -44,10 +46,10 @@ pluck out freq amp dur = frame dur $ do
     cos2piMake pc xx
     wireMake xx out amp
 
-    fenv <- envMake fc f0
-    envXdec fenv (f0 / 2.0) (durp / 5)
+    fenv <- envMake fc f0'
+    envXdec fenv f1' (dur' / 5)
 
     aenv <- envMake xx 1
-    envXdec aenv 0 (durp / 5)
+    envXdec aenv 0 (dur' / 5)
 
 -- vim:fdm=marker:

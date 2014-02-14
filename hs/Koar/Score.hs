@@ -14,6 +14,10 @@ module Koar.Score
     , Secs(..)
     , Units(..)
 
+    -- quantities
+    , Time(..)
+    , Freq(..)
+
     -- resource kinds
     , Kind(..)
     , Tag(..)
@@ -43,8 +47,10 @@ module Koar.Score
     , event
     , here
     , frame
+
     , sampleRate
     , toPeriods
+    , toNormFreq
 
     ) where
 -- }}}
@@ -70,6 +76,20 @@ newtype Secs = Secs { unSecs :: Rational }
 
 newtype Units = Units { unUnits :: Rational }
   deriving (Eq, Ord, Enum, Num, Fractional, Show)
+
+-- }}}
+
+-- quantities {{{
+
+data Time
+    = Sec Rational
+    | Cell Rational
+  deriving (Eq, Show)
+
+data Freq
+    = Hz Rational
+    | PerCell Rational
+  deriving (Eq, Show)
 
 -- }}}
 
@@ -481,6 +501,38 @@ freshFRef = Score $ \s ->
         s' = s { scrNext = succ n }
     in (FRef n, s', Stop)
 
+event :: Event s () -> Score s ()
+event e = Score $ \s ->
+    let t = hereT0 $ scrHere s
+    in ((), s, esSingle t e)
+
+
+
+sampleRate :: Score s Int
+sampleRate = Score $ \s -> (hereRate $ scrHere s, s, Stop)
+
+toPeriods :: Time -> Score s Rational
+toPeriods q = Score $ \s -> let
+    { h = scrHere s
+    ; sr = fromIntegral $ hereRate h
+    ; dt = unSecs $ hereDT h
+    ; p = case q of
+        Sec x -> x * sr
+        Cell x -> x * dt * sr
+    } in (p, s, Stop)
+
+toNormFreq :: Freq -> Score s Rational
+toNormFreq q = Score $ \s -> let
+    { h = scrHere s
+    ; sr = fromIntegral $ hereRate h
+    ; dt = unSecs $ hereDT h
+    ; p = case q of
+        Hz x -> x / sr
+        PerCell x -> x / (sr * dt)
+    } in (p, s, Stop)
+
+
+
 localHere :: (Here s -> Here s) -> Score s a -> Score s a
 localHere f x = Score $ \s ->
     let h = f $ scrHere s
@@ -488,23 +540,24 @@ localHere f x = Score $ \s ->
     in case unScore x s' of
         (x', s'', es) -> (x', s'' { scrHere = scrHere s }, es)
 
-shift :: Units -> Score s a -> Score s a
-shift t = localHere $ \h@(Here { hereT0 = t0, hereDT = dt }) ->
-    h { hereT0 = Secs $ unSecs t0 + unUnits t * unSecs dt }
+shift :: Time -> Score s a -> Score s a
+shift q = localHere $ \h@(Here { hereT0 = t0, hereDT = dt }) ->
+    let t = case q of
+            Sec x -> x
+            Cell x -> x * unSecs dt
+    in h { hereT0 = Secs $ unSecs t0 + t }
 
-scale :: Units -> Score s a -> Score s a
-scale x = localHere $ \h@(Here { hereDT = dt }) ->
-    h { hereDT = Secs $ unUnits x * unSecs dt }
-
-event :: Event s () -> Score s ()
-event e = Score $ \s ->
-    let t = hereT0 $ scrHere s
-    in ((), s, esSingle t e)
+scale :: Time -> Score s a -> Score s a
+scale q = localHere $ \h@(Here { hereDT = dt }) ->
+    let dt' = case q of
+            Sec x -> x
+            Cell x -> x * unSecs dt
+    in h { hereDT = Secs dt' }
 
 here :: Score s (FRef s)
 here = Score $ \s -> (hereFrame $ scrHere s, s, Stop)
 
-frame :: Units -> Score s a -> Score s a
+frame :: Time -> Score s a -> Score s a
 frame t x = do
     up <- here
     fr <- freshFRef
@@ -512,16 +565,6 @@ frame t x = do
     x' <- localHere (\h -> h { hereFrame = fr }) x
     shift t . event $ endE fr
     return x'
-
-sampleRate :: Score s Int
-sampleRate = Score $ \s -> (hereRate $ scrHere s, s, Stop)
-
--- }}}
-
--- utilities {{{
-
-toPeriods :: Secs -> Score s Rational
-toPeriods (Secs k) = (k *) . fromIntegral <$> sampleRate
 
 -- }}}
 
