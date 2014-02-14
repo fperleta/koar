@@ -69,104 +69,116 @@ END
 
 // }}}
 
-// (16 - 17) wires {{{
+// (16 - 17) touches {{{
 
-OPCODE (16, "wire/make", wire_make)
+OPCODE (16, "touch", touch)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (17, "reserved", nop)
+END
+
+// }}}
+
+// (18 - 19) wires {{{
+
+OPCODE (18, "wire/make", wire_make)
     ARG (A_ANYREG, "self")
     ARG (A_REG + T_PNODE, "src")
     ARG (A_REG + T_PNODE, "snk")
     ARG (A_DOUBLE, "scale")
 END
 
-OPCODE (17, "wire/scale", wire_scale)
+OPCODE (19, "wire/scale", wire_scale)
     ARG (A_REG + T_WIRE, "self")
     ARG (A_DOUBLE, "scale")
 END
 
 // }}}
 
-// (18 - 21) fwriters {{{
+// (20 - 23) fwriters {{{
 
-OPCODE (18, "fwriter1/make", fwriter1_make)
+OPCODE (20, "fwriter1/make", fwriter1_make)
     ARG (A_ANYREG, "self")
     ARG (A_UTF8, "filepath")
     ARG (A_REG + T_PNODE, "src")
 END
 
-OPCODE (19, "fwriter1/close", fwriter_close)
+OPCODE (21, "fwriter1/close", fwriter_close)
     ARG (A_REG + T_FWRITER1, "self")
 END
 
-OPCODE (20, "fwriter2/make", fwriter2_make)
+OPCODE (22, "fwriter2/make", fwriter2_make)
     ARG (A_ANYREG, "self")
     ARG (A_UTF8, "filepath")
     ARG (A_REG + T_PNODE, "left")
     ARG (A_REG + T_PNODE, "right")
 END
 
-OPCODE (21, "fwriter2/close", fwriter_close)
+OPCODE (23, "fwriter2/close", fwriter_close)
     ARG (A_REG + T_FWRITER2, "self")
 END
 
 // }}}
 
-// (22 - 27) envs {{{
+// (24 - 29) envs {{{
 
-OPCODE (22, "env/make", env_make)
+OPCODE (24, "env/make", env_make)
     ARG (A_ANYREG, "self")
     ARG (A_REG + T_PNODE, "snk")
     ARG (A_DOUBLE, "x0")
 END
 
-OPCODE (23, "env/const", env_const)
+OPCODE (25, "env/const", env_const)
     ARG (A_REG + T_ENV, "self")
     ARG (A_DOUBLE, "x0")
 END
 
-OPCODE (24, "env/lin", env_lin)
+OPCODE (26, "env/lin", env_lin)
     ARG (A_REG + T_ENV, "self")
     ARG (A_DOUBLE, "x1")
     ARG (A_DOUBLE, "t")
 END
 
-OPCODE (25, "env/xdec", env_xdec)
+OPCODE (27, "env/xdec", env_xdec)
     ARG (A_REG + T_ENV, "self")
     ARG (A_DOUBLE, "xinf")
     ARG (A_DOUBLE, "tau")
 END
 
-OPCODE (26, "reserved", nop)
+OPCODE (28, "reserved", nop)
 END
 
-OPCODE (27, "reserved", nop)
+OPCODE (29, "reserved", nop)
 END
 
 // }}}
 
-// (28 - 29) phasors {{{
+// (30 - 31) phasors {{{
 
-OPCODE (28, "phasor/make", phasor_make)
+OPCODE (30, "phasor/make", phasor_make)
     ARG (A_ANYREG, "self")
     ARG (A_REG + T_PNODE, "src")
     ARG (A_REG + T_PNODE, "snk")
 END
 
-OPCODE (29, "phasor/jump", phasor_jump)
+OPCODE (31, "phasor/jump", phasor_jump)
     ARG (A_REG + T_PHASOR, "self")
     ARG (A_DOUBLE, "phase")
 END
 
 // }}}
 
-// (30 - 31) cos2pis {{{
+// (32 - 33) cos2pis {{{
 
-OPCODE (30, "cos2pi/make", cos2pi_make)
+OPCODE (32, "cos2pi/make", cos2pi_make)
     ARG (A_ANYREG, "self")
     ARG (A_REG + T_PNODE, "src")
     ARG (A_REG + T_PNODE, "snk")
 END
 
-OPCODE (31, "reserved", nop)
+OPCODE (33, "reserved", nop)
 END
 
 // }}}

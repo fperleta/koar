@@ -41,6 +41,12 @@ extern void N_phasor_jump (anode_t, samp_t);
 
 // }}}
 
+// touches {{{
+
+extern anode_t N_touch (patch_t, pnode_t);
+
+// }}}
+
 // wires {{{
 
 extern anode_t N_wire_make (patch_t, pnode_t, pnode_t, double);

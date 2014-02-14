@@ -34,6 +34,20 @@ makeProd = do
 
 -- }}}
 
+-- touch {{{
+
+touch :: Ref s P -> Score s ()
+touch out = do
+    r <- freshRef TagEnv
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regOut <- regE out
+        genE . emit $ I_touch reg regOut
+    return ()
+
+-- }}}
+
 -- wire {{{
 
 wireMake :: Ref s P -> Ref s P -> Double -> Score s (Ref s Wire)

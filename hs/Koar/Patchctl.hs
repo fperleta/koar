@@ -61,6 +61,9 @@ data Instr
     | I_sum Reg
     | I_prod Reg
 
+    -- touches:
+    | I_touch Reg Reg
+
     -- wires:
     | I_wire_make Reg Reg Reg Double
     | I_wire_scale Reg Double
@@ -121,23 +124,25 @@ bInstr x = case x of
     I_sum r                     -> bNat 8 <> bNat r
     I_prod r                    -> bNat 9 <> bNat r
 
-    I_wire_make r i o s         -> bNat 16 <> bNat r <> bNat i <> bNat o <> bDbl s
-    I_wire_scale r s            -> bNat 17 <> bNat r <> bDbl s
+    I_touch r out               -> bNat 16 <> bNat r <> bNat out
 
-    I_fwriter1_make r fn i      -> bNat 18 <> bNat r <> bStr fn <> bNat i
-    I_fwriter1_close r          -> bNat 19 <> bNat r
-    I_fwriter2_make r fn il ir  -> bNat 20 <> bNat r <> bStr fn <> bNat il <> bNat ir
-    I_fwriter2_close r          -> bNat 21 <> bNat r
+    I_wire_make r i o s         -> bNat 18 <> bNat r <> bNat i <> bNat o <> bDbl s
+    I_wire_scale r s            -> bNat 19 <> bNat r <> bDbl s
 
-    I_env_make r out x0         -> bNat 22 <> bNat r <> bNat out <> bDbl x0
-    I_env_const r x0            -> bNat 23 <> bNat r <> bDbl x0
-    I_env_lin r x1 t            -> bNat 24 <> bNat r <> bDbl x1 <> bDbl t
-    I_env_xdec r xinf tau       -> bNat 25 <> bNat r <> bDbl xinf <> bDbl tau
+    I_fwriter1_make r fn i      -> bNat 20 <> bNat r <> bStr fn <> bNat i
+    I_fwriter1_close r          -> bNat 21 <> bNat r
+    I_fwriter2_make r fn il ir  -> bNat 22 <> bNat r <> bStr fn <> bNat il <> bNat ir
+    I_fwriter2_close r          -> bNat 23 <> bNat r
 
-    I_phasor_make r src snk     -> bNat 28 <> bNat r <> bNat src <> bNat snk
-    I_phasor_jump r phase       -> bNat 29 <> bNat r <> bDbl phase
+    I_env_make r out x0         -> bNat 24 <> bNat r <> bNat out <> bDbl x0
+    I_env_const r x0            -> bNat 25 <> bNat r <> bDbl x0
+    I_env_lin r x1 t            -> bNat 26 <> bNat r <> bDbl x1 <> bDbl t
+    I_env_xdec r xinf tau       -> bNat 27 <> bNat r <> bDbl xinf <> bDbl tau
 
-    I_cos2pi_make r src snk     -> bNat 30 <> bNat r <> bNat src <> bNat snk
+    I_phasor_make r src snk     -> bNat 30 <> bNat r <> bNat src <> bNat snk
+    I_phasor_jump r phase       -> bNat 31 <> bNat r <> bDbl phase
+
+    I_cos2pi_make r src snk     -> bNat 32 <> bNat r <> bNat src <> bNat snk
 
 -- }}}
 
