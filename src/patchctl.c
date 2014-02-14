@@ -106,7 +106,7 @@ free_on_patch (peer_t self, proto_msg_t msg)
     free (msg);
 
     ctl->state = PATCHCTL_BOUND;
-#define PATCH_WORKERS 4
+#define PATCH_WORKERS 1
     ctl->vm = patchvm_create (PATCH_WORKERS, 0);
 
     short_reply (self, mid, "okay");
