@@ -353,14 +353,27 @@ anode_create (patch_t p, ainfo_t info)
     return an;
 }
 
+static void remove_reader (pnode_t, anode_t);
+static void remove_writer (pnode_t);
+
 static void
 anode_destroy (anode_t an)
 {
     pthread_mutex_lock (&(an->mutex));
+
+    size_t i;
+    for (i = 0; i < an->info->ins; i++)
+        if (an->refs[i])
+            remove_reader (an->refs[i], an);
+    for (i = 0; i < an->info->outs; i++)
+        if (an->refs[an->info->ins + i])
+            remove_writer (an->refs[an->info->ins + i]);
+
     if (an->info->exit)
         an->info->exit (an);
     if (an->root_patch)
         patch_unroot (an->root_patch, an);
+
     pthread_mutex_unlock (&(an->mutex));
 
     int res = pthread_mutex_destroy (&(an->mutex));
@@ -487,6 +500,7 @@ static void
 add_writer (pnode_t pn)
 {
     pthread_mutex_lock (&(pn->mutex));
+    pn->refcount++;
     pn->writers++;
     pthread_mutex_unlock (&(pn->mutex));
 }
@@ -497,6 +511,7 @@ remove_writer (pnode_t pn)
     pthread_mutex_lock (&(pn->mutex));
     pn->writers--;
     pthread_mutex_unlock (&(pn->mutex));
+    pnode_release (pn);
 }
 
 void
