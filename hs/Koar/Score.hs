@@ -96,7 +96,8 @@ data Freq
 -- resource kinds {{{
 
 data Kind
-    = P -- passive nodes
+    = Array
+    | P -- passive nodes
     | Wire
     | FW1
     | FW2
@@ -105,6 +106,7 @@ data Kind
     | Cos2pi
 
 data Tag :: Kind -> * where
+    TagArray :: Tag Array
     TagP :: Tag P
     TagWire :: Tag Wire
     TagFW1 :: Tag FW1
@@ -118,6 +120,7 @@ data Tag :: Kind -> * where
 -- refs {{{
 
 data Ref :: * -> Kind -> * where
+    Rarray :: Int -> Ref s Array
     Rp :: Int -> Ref s P
     Rwire :: Int -> Ref s Wire
     Rfw1 :: Int -> Ref s FW1
@@ -128,6 +131,7 @@ data Ref :: * -> Kind -> * where
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
+    TagArray -> Rarray n
     TagP -> Rp n
     TagWire -> Rwire n
     TagFW1 -> Rfw1 n
@@ -138,6 +142,7 @@ refFromInt tag n = case tag of
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
+    Rarray k -> k
     Rp k -> k
     Rwire k -> k
     Rfw1 k -> k
@@ -151,7 +156,8 @@ refToInt r = case r of
 -- refmaps {{{
 
 data RefMap s a = RefMap
-    { refmP :: IntMap a
+    { refmArray :: IntMap a
+    , refmP :: IntMap a
     , refmWire :: IntMap a
     , refmFW1 :: IntMap a
     , refmFW2 :: IntMap a
@@ -161,12 +167,13 @@ data RefMap s a = RefMap
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap e e e e e e e
+refmEmpty = RefMap e e e e e e e e
   where
     e = IM.empty
 
 refmInsert :: Ref s k -> a -> RefMap s a -> RefMap s a
 refmInsert r x rm = case r of
+    Rarray k -> rm { refmArray = IM.insert k x $ refmArray rm }
     Rp k -> rm { refmP = IM.insert k x $ refmP rm }
     Rwire k -> rm { refmWire = IM.insert k x $ refmWire rm }
     Rfw1 k -> rm { refmFW1 = IM.insert k x $ refmFW1 rm }
@@ -177,6 +184,7 @@ refmInsert r x rm = case r of
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
+    Rarray k -> IM.lookup k $ refmArray rm
     Rp k -> IM.lookup k $ refmP rm
     Rwire k -> IM.lookup k $ refmWire rm
     Rfw1 k -> IM.lookup k $ refmFW1 rm
@@ -187,6 +195,7 @@ refmLookup r rm = case r of
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
+    Rarray k -> rm { refmArray = IM.delete k $ refmArray rm }
     Rp k -> rm { refmP = IM.delete k $ refmP rm }
     Rwire k -> rm { refmWire = IM.delete k $ refmWire rm }
     Rfw1 k -> rm { refmFW1 = IM.delete k $ refmFW1 rm }
@@ -200,7 +209,8 @@ refmDelete r rm = case r of
 -- refsets {{{
 
 data RefSet s = RefSet
-    { refsP :: IntSet
+    { refsArray :: IntSet
+    , refsP :: IntSet
     , refsWire :: IntSet
     , refsFW1 :: IntSet
     , refsFW2 :: IntSet
@@ -210,12 +220,13 @@ data RefSet s = RefSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet e e e e e e e
+refsEmpty = RefSet e e e e e e e e
   where
     e = IS.empty
 
 refsInsert :: Ref s k -> RefSet s -> RefSet s
 refsInsert r rs = case r of
+    Rarray k -> rs { refsArray = IS.insert k $ refsArray rs }
     Rp k -> rs { refsP = IS.insert k $ refsP rs }
     Rwire k -> rs { refsWire = IS.insert k $ refsWire rs }
     Rfw1 k -> rs { refsFW1 = IS.insert k $ refsFW1 rs }
@@ -226,6 +237,7 @@ refsInsert r rs = case r of
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
+    Rarray k -> IS.member k $ refsArray rs
     Rp k -> IS.member k $ refsP rs
     Rwire k -> IS.member k $ refsWire rs
     Rfw1 k -> IS.member k $ refsFW1 rs
@@ -236,6 +248,7 @@ refsMember r rs = case r of
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
+    mapM_ (f . Rarray) . IS.toList $ refsArray rs
     mapM_ (f . Rp) . IS.toList $ refsP rs
     mapM_ (f . Rwire) . IS.toList $ refsWire rs
     mapM_ (f . Rfw1) . IS.toList $ refsFW1 rs

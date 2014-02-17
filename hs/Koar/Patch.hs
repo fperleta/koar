@@ -12,6 +12,39 @@ import           Koar.Patchctl
 import           Koar.Score
 -- }}}
 
+-- arrays {{{
+
+arrayMake :: Nat -> Double -> Score s (Ref s Array)
+arrayMake size x0 = do
+    r <- freshRef TagArray
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        genE . emit $ I_array_make reg size x0
+    return r
+
+arrayConst :: Ref s Array -> Double -> Score s ()
+arrayConst r x0 = event $ do
+    reg <- regE r
+    genE . emit $ I_array_const reg x0
+
+arrayNormalize :: Ref s Array -> Double -> Score s ()
+arrayNormalize r amp = event $ do
+    reg <- regE r
+    genE . emit $ I_array_normalize reg amp
+
+arrayDC :: Ref s Array -> Double -> Score s ()
+arrayDC r offset = event $ do
+    reg <- regE r
+    genE . emit $ I_array_dc reg offset
+
+arrayPartial :: Ref s Array -> Double -> Nat -> Double -> Score s ()
+arrayPartial r amp index phase = event $ do
+    reg <- regE r
+    genE . emit $ I_array_partial reg amp index phase
+
+-- }}}
+
 -- passive nodes {{{
 
 makeSum :: Score s (Ref s P)

@@ -7,6 +7,7 @@
 #ifndef KOAR_PATCHVM_H
 #define KOAR_PATCHVM_H
 
+#include "array.h"
 #include "patch.h"
 #include "defs.h"
 
@@ -14,6 +15,7 @@
 
 typedef enum {
     T_BLANK = 0,
+    T_ARRAY,
     T_PNODE,
     T_TOUCH,
     T_WIRE,
@@ -44,6 +46,7 @@ typedef struct {
         void* ptr;
         pnode_t pn;
         anode_t an;
+        array_t arr;
     };
 } reg_t;
 
