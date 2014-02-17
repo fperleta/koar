@@ -14,8 +14,10 @@
 #include <argp.h>
 #include <ev.h>
 #include "peers.h"
-#include "patchctl.h"
+#include "patchvm.h"
 #include "defs.h"
+
+// logging {{{
 
 static FILE* log_file = NULL;
 static int log_stdout = 1;
@@ -58,6 +60,10 @@ __log_emit (const char* fn, int ln, log_level_t lvl, const char* fmt, ...)
             printf ("(%s) %s\n", log_levels[lvl], buf);
 }
 
+// }}}
+
+// helper functions {{{
+
 void __attribute__ ((noreturn))
 __panic (void)
 {
@@ -87,13 +93,16 @@ xrealloc (void* p, size_t s)
     return p;
 }
 
-
+// }}}
+
+// command-line arguments {{{
 
 const char* argp_program_version = "koar " KOAR_VERSION;
 
 static struct argp_option opts[] = {
         { "daemon", 'd', 0, 0, "Detach from the terminal and run in the background.", 0 },
         { "quiet", 'q', 0, 0, "Don't print log messages to the standard output.", 0 },
+        { "slave", 's', 0, 0, "Run as a slave process, reading patchvm bytecode from stdin.", 0},
         { "verbose", 'v', 0, 0, "Print all log messages. Repeat to enable logging.", 0 },
         { 0, 0, 0, 0, 0, 0 }
 };
@@ -103,13 +112,17 @@ typedef struct {
     int quiet;
     int verbose;
     int logging;
+    int slave;
+    size_t workers;
 } args_t;
 
 static const args_t default_args = {
     .daemon = 0,
     .quiet = 0,
     .verbose = 0,
-    .logging = 0
+    .logging = 0,
+    .slave = 0,
+    .workers = 1
 };
 
 static error_t
@@ -123,6 +136,9 @@ parse_opt (int key, char* arg UNUSED, struct argp_state* state)
             break;
         case 'q':
             a->quiet = 1;
+            break;
+        case 's':
+            a->slave = 1;
             break;
         case 'v':
             a->logging = !!a->verbose;
@@ -141,39 +157,8 @@ static struct argp argp = {
     .doc = NULL
 };
 
-// echo {{{
-
-static void
-echo_on_accept (listener_t listener UNUSED, peer_t peer UNUSED)
-{
-}
-
-static void
-echo_on_message (peer_t peer, proto_msg_t msg)
-{
-    size_t len = msg->header.bytes;
-    char buf[len + 1];
-    memcpy (buf, msg->payload, len);
-    buf[len] = 0;
-    log_emit (LOG_NORMAL, "echo: %s", buf);
-    peer_reply (peer, msg->header.mid, msg);
-}
-
-static void
-echo_on_shutdown (peer_t peer UNUSED)
-{
-    log_emit (LOG_NORMAL, "echo shutdown.");
-}
-
-struct listener_beh_s echo_beh = {
-    .on_accept = echo_on_accept,
-    .peer_beh = {
-        .on_message = echo_on_message,
-        .on_shutdown = echo_on_shutdown
-    }
-};
-
 // }}}
+
 
 static void
 init (args_t* args)
@@ -184,17 +169,7 @@ init (args_t* args)
         daemon (1, 0);
     }
 
-    patchctl_endpoint_t ep UNUSED = patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
-
-#if 0
-    DEBUGP ("%u", sizeof (proto_hdr_t));
-    listener_create (EV_DEFAULT_ &echo_beh, NULL, "tcp:20350");
-
-    peer_t peer = peer_connect (EV_DEFAULT_ &(echo_beh.peer_beh), NULL, "tcp:0.0.0.0:20350");
-    proto_msg_t msg = proto_msg_alloc (6);
-    strcpy ((void*) msg->payload, "burek");
-    peer_send (peer, msg);
-#endif
+    //patchctl_endpoint_t ep UNUSED = patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
 }
 
 static void
@@ -237,7 +212,15 @@ main (int argc, char** argv)
     atexit (cleanup);
     init (&args);
 
-    /* main loop */ {
+    if (args.slave) /* slave mode */
+    {
+        patchvm_t vm = patchvm_create (args.workers, 0);
+
+        if (patchvm_file (vm, stdin) != 0)
+            exit (EXIT_FAILURE);
+    }
+    else /* main loop */
+    {
         struct ev_loop* loop = EV_DEFAULT;
 
         ev_signal sigint;
@@ -247,7 +230,7 @@ main (int argc, char** argv)
         ev_run (loop, 0);
     }
 
-    exit (0);
+    exit (EXIT_SUCCESS);
 }
 
 // vim:fdm=marker

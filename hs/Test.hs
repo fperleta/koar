@@ -14,7 +14,8 @@ import           Koar.Score
 -- }}}
 
 main :: IO ()
-main = runInstrs "127.0.0.1:20350" . runGen $ runScore 48000 score
+--main = runInstrs "127.0.0.1:20350" . runGen $ runScore 48000 score
+main = runSlave . runGen $ runScore 48000 score
 
 score :: Score s ()
 score = scale (Sec $ 60 / 163) $ do

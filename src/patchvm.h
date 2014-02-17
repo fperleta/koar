@@ -7,6 +7,7 @@
 #ifndef KOAR_PATCHVM_H
 #define KOAR_PATCHVM_H
 
+#include <stdio.h>
 #include "array.h"
 #include "patch.h"
 #include "defs.h"
@@ -89,6 +90,8 @@ extern reg_t patchvm_get (patchvm_t, unsigned);
 extern void patchvm_set (patchvm_t, unsigned, reg_t);
 
 extern void patchvm_exec (patchvm_t, const uint8_t*, size_t);
+
+extern int patchvm_file (patchvm_t, FILE*);
 
 #endif /* koar/patchvm.h */
 

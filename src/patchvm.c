@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "patchvm.h"
 
 // types {{{
@@ -422,6 +423,7 @@ static const char* regtag_strings[] = {
     "blank",
     "array",
     "pnode",
+    "touch",
     "wire",
     "fwriter1",
     "fwriter2",
@@ -694,6 +696,73 @@ fail_instr:
 
 fail:
     vm->fail = 1;
+}
+
+// }}}
+
+// file {{{
+
+int
+patchvm_file (patchvm_t vm, FILE* f)
+{
+#define FILE_BUF_SIZE 1024
+    uint8_t buf[FILE_BUF_SIZE];
+    size_t base = 0, len = 0;
+    int drained = 0;
+
+    do {
+        if (!drained && (len < FILE_BUF_SIZE/2))
+        {
+            memmove (buf, buf + base, len);
+            base = 0;
+            len += fread (buf + len, 1, FILE_BUF_SIZE - len, f);
+            if (feof (f))
+                drained = 1;
+        }
+
+        struct decoder_s dec = {
+            .p = buf + base,
+            .end = buf + base + len,
+            .fail = 0
+        };
+
+        instr_t instr = decode_instr (&dec);
+        if (dec.fail)
+        {
+            log_emit (LOG_DETAIL, "unable to decode the next instruction");
+            goto fail;
+        }
+
+        base = dec.p - buf;
+        len = dec.end - dec.p;
+
+        char pbuf[1024];
+        snprint_instr (pbuf, 1024, instr);
+
+        struct checker_s chk = { .fail = 0 };
+        check_instr (vm, &chk, instr);
+        if (chk.fail)
+        {
+            log_emit (LOG_DETAIL, "checker failed for: %s", pbuf);
+            goto fail;
+        }
+
+        log_emit (LOG_DETAIL, "exec: %s", pbuf);
+
+        patchvm_opcode_t run = dispatch[instr->opc];
+        run (vm, instr);
+        if (vm->fail)
+            goto fail;
+
+        continue;
+
+fail:
+        if (instr)
+            free (instr);
+        return -1;
+    } while (!drained || len);
+
+    return 0;
 }
 
 // }}}

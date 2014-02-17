@@ -23,6 +23,9 @@ module Koar.Patchctl
     -- client
     , runInstrs
 
+    -- slave
+    , runSlave
+
     ) where
 -- }}}
 
@@ -30,7 +33,7 @@ module Koar.Patchctl
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Bits
-import           Data.ByteString.Builder
+import           Data.ByteString.Lazy.Builder
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LB
 import           Data.IntSet (IntSet)
@@ -38,6 +41,9 @@ import qualified Data.IntSet as IS
 import           Data.Monoid
 import           Data.Word
 import           Network.Socket (HostName, PortNumber)
+import           System.Exit
+import           System.IO
+import           System.Process
 
 import           Koar.Proto
 -- }}}
@@ -301,6 +307,26 @@ runInstrs endpoint is = runDirectT endpoint $ do
                 []  -> return ()
                 _   | msg == "okay" -> goChunks cs
                     | otherwise -> goChunks cs
+
+-- }}}
+
+-- slave {{{
+
+putInstrs :: Handle -> [Instr] -> IO ()
+putInstrs h = LB.hPut h . toLazyByteString . mconcat . map bInstr
+
+runSlave :: [Instr] -> IO ()
+runSlave is = do
+    let cp = (proc "koar" ["--slave", "-v"]) { std_in = CreatePipe }
+    (Just h, _, _, ph) <- createProcess cp
+    hSetBuffering h NoBuffering
+    hSetBinaryMode h True
+    putInstrs h is
+    hFlush h
+    status <- waitForProcess ph
+    case status of
+        ExitSuccess -> return ()
+        _ -> exitFailure
 
 -- }}}
 
