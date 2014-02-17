@@ -105,6 +105,7 @@ data Kind
     | Phasor
     | Cos2pi
     | Lookup
+    | Noise
 
 data Tag :: Kind -> * where
     TagArray :: Tag Array
@@ -116,6 +117,7 @@ data Tag :: Kind -> * where
     TagPhasor :: Tag Phasor
     TagCos2pi :: Tag Cos2pi
     TagLookup :: Tag Lookup
+    TagNoise :: Tag Noise
 
 -- }}}
 
@@ -131,6 +133,7 @@ data Ref :: * -> Kind -> * where
     Rphasor :: Int -> Ref s Phasor
     Rcos2pi :: Int -> Ref s Cos2pi
     Rlookup :: Int -> Ref s Lookup
+    Rnoise :: Int -> Ref s Noise
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
@@ -143,6 +146,7 @@ refFromInt tag n = case tag of
     TagPhasor -> Rphasor n
     TagCos2pi -> Rcos2pi n
     TagLookup -> Rlookup n
+    TagNoise -> Rnoise n
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
@@ -155,6 +159,7 @@ refToInt r = case r of
     Rphasor k -> k
     Rcos2pi k -> k
     Rlookup k -> k
+    Rnoise k -> k
 
 -- }}}
 
@@ -170,10 +175,11 @@ data RefMap s a = RefMap
     , refmPhasor :: IntMap a
     , refmCos2pi :: IntMap a
     , refmLookups :: IntMap a
+    , refmNoise :: IntMap a
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap e e e e e e e e e
+refmEmpty = RefMap e e e e e e e e e e
   where
     e = IM.empty
 
@@ -188,6 +194,7 @@ refmInsert r x rm = case r of
     Rphasor k -> rm { refmPhasor = IM.insert k x $ refmPhasor rm }
     Rcos2pi k -> rm { refmCos2pi = IM.insert k x $ refmCos2pi rm }
     Rlookup k -> rm { refmLookups = IM.insert k x $ refmLookups rm }
+    Rnoise k -> rm { refmNoise = IM.insert k x $ refmNoise rm }
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
@@ -200,6 +207,7 @@ refmLookup r rm = case r of
     Rphasor k -> IM.lookup k $ refmPhasor rm
     Rcos2pi k -> IM.lookup k $ refmCos2pi rm
     Rlookup k -> IM.lookup k $ refmLookups rm
+    Rnoise k -> IM.lookup k $ refmNoise rm
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
@@ -212,6 +220,7 @@ refmDelete r rm = case r of
     Rphasor k -> rm { refmPhasor = IM.delete k $ refmPhasor rm }
     Rcos2pi k -> rm { refmCos2pi = IM.delete k $ refmCos2pi rm }
     Rlookup k -> rm { refmLookups = IM.delete k $ refmLookups rm }
+    Rnoise k -> rm { refmNoise = IM.delete k $ refmNoise rm }
 
 -- }}}
 
@@ -227,10 +236,11 @@ data RefSet s = RefSet
     , refsPhasor :: IntSet
     , refsCos2pi :: IntSet
     , refsLookup :: IntSet
+    , refsNoise :: IntSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet e e e e e e e e e
+refsEmpty = RefSet e e e e e e e e e e
   where
     e = IS.empty
 
@@ -245,6 +255,7 @@ refsInsert r rs = case r of
     Rphasor k -> rs { refsPhasor = IS.insert k $ refsPhasor rs }
     Rcos2pi k -> rs { refsCos2pi = IS.insert k $ refsCos2pi rs }
     Rlookup k -> rs { refsLookup = IS.insert k $ refsLookup rs }
+    Rnoise k -> rs { refsNoise = IS.insert k $ refsNoise rs }
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
@@ -257,6 +268,7 @@ refsMember r rs = case r of
     Rphasor k -> IS.member k $ refsPhasor rs
     Rcos2pi k -> IS.member k $ refsCos2pi rs
     Rlookup k -> IS.member k $ refsLookup rs
+    Rnoise k -> IS.member k $ refsNoise rs
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
@@ -269,6 +281,7 @@ refsFor rs f = do
     mapM_ (f . Rphasor) . IS.toList $ refsPhasor rs
     mapM_ (f . Rcos2pi) . IS.toList $ refsCos2pi rs
     mapM_ (f . Rlookup) . IS.toList $ refsLookup rs
+    mapM_ (f . Rnoise) . IS.toList $ refsNoise rs
 
 -- }}}
 
@@ -522,6 +535,7 @@ freshRef tag = Score $ \s ->
         TagPhasor -> (Rphasor n, s', Stop)
         TagCos2pi -> (Rcos2pi n, s', Stop)
         TagLookup -> (Rlookup n, s', Stop)
+        TagNoise -> (Rnoise n, s', Stop)
 
 freshFRef :: Score s (FRef s)
 freshFRef = Score $ \s ->

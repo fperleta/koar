@@ -98,6 +98,12 @@ data Instr
     | I_lookup_make Reg Reg Reg Reg
     | I_lookup_table Reg Reg
 
+    -- noises:
+    | I_noise_make Reg Reg Nat
+    | I_noise_seed Reg Nat
+    | I_noise_white Reg
+    | I_noise_pink Reg
+
   deriving (Eq, Show)
 
 -- }}}
@@ -164,6 +170,11 @@ bInstr x = case x of
 
     I_lookup_make r tbl src snk -> bNat 94 <> bNat r <> bNat tbl <> bNat src <> bNat snk
     I_lookup_table r tbl        -> bNat 95 <> bNat r <> bNat tbl
+
+    I_noise_make r snk seed     -> bNat 96 <> bNat r <> bNat snk <> bNat seed
+    I_noise_seed r seed         -> bNat 97 <> bNat r <> bNat seed
+    I_noise_white r             -> bNat 98 <> bNat r
+    I_noise_pink r              -> bNat 99 <> bNat r
 
 -- }}}
 

@@ -42,6 +42,15 @@ extern void N_lookup_table (anode_t, array_t);
 
 // }}}
 
+// noises {{{
+
+extern anode_t N_noise_make (patch_t, pnode_t, unsigned);
+extern void N_noise_seed (anode_t, unsigned);
+extern void N_noise_white (anode_t);
+extern void N_noise_pink (anode_t);
+
+// }}}
+
 // phasors {{{
 
 extern anode_t N_phasor_make (patch_t, pnode_t, pnode_t);

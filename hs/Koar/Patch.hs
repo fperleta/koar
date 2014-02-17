@@ -222,4 +222,33 @@ lookupTable r tbl = event $ do
 
 -- }}}
 
+-- noise {{{
+
+noiseMake :: Ref s P -> Nat -> Score s (Ref s Noise)
+noiseMake snk seed = do
+    r <- freshRef TagNoise
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSnk <- regE snk
+        genE . emit $ I_noise_make reg regSnk seed
+    return r
+
+noiseSeed :: Ref s Noise -> Nat -> Score s ()
+noiseSeed r seed = event $ do
+    reg <- regE r
+    genE . emit $ I_noise_seed reg seed
+
+noiseWhite :: Ref s Noise -> Score s ()
+noiseWhite r = event $ do
+    reg <- regE r
+    genE . emit $ I_noise_white reg
+
+noisePink :: Ref s Noise -> Score s ()
+noisePink r = event $ do
+    reg <- regE r
+    genE . emit $ I_noise_pink reg
+
+-- }}}
+
 -- vim:fdm=marker:

@@ -47,6 +47,9 @@ score = scale (Sec $ 60 / 163) $ do
             shift (Cell 1) $ pluck master wave 0.3 (Hz $ 55 * 7/5) (Cell 1)
             shift (Cell 2.5) $ pluck master wave 0.3 (Hz $ 55 * 7/5) (Cell 1)
 
+    let basicHihat = forM_ [0 .. 7] $ \i -> do
+            shift (Cell $ i / 2) $ noise master 0.2 (Cell $ 1 / 8)
+
     frame (Cell 16) $ do
         --shift (Cell 0.5) $ pluck master wave 0.3 (Hz 110) (Cell 3)
         --shift (Cell 1.5) $ pluck master wave 0.3 (Hz 220) (Cell 2.5)
@@ -60,10 +63,10 @@ score = scale (Sec $ 60 / 163) $ do
         shift (Cell 13.5) $ pluck master wave 0.2 (Hz $ 55) (Cell 2)
         --}
 
-        shift (Cell 0) $ basicStep >> basicBass
+        shift (Cell 0) $ basicStep >> basicBass >> basicHihat
         shift (Cell 4) $ basicStep >> basicBass
-        shift (Cell 8) $ basicStep >> basicBass
-        shift (Cell 12) $ basicStep >> basicBass
+        shift (Cell 8) $ basicStep >> basicBass >> basicHihat
+        shift (Cell 12) $ basicStep >> basicBass >> basicHihat
 
 
 bass :: Ref s P -> Double -> Freq -> Freq -> Time -> Score s ()
@@ -117,5 +120,13 @@ pluck out wave amp f0 dur = frame dur $ do
     aenv <- envMake xx 0
     envLin aenv 1 att'
     shift dur . frame rel $ envXdec aenv 0 (rel' / 5)
+
+noise :: Ref s P -> Double -> Time -> Score s ()
+noise out amp dur = frame dur $ do
+    acc <- makeSum
+    n <- noiseMake acc 20350
+    noisePink n
+    wireMake acc out amp
+    return ()
 
 -- vim:fdm=marker:

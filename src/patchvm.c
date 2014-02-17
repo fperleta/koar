@@ -428,7 +428,8 @@ static const char* regtag_strings[] = {
     "env",
     "phasor",
     "cos2pi",
-    "lookup"
+    "lookup",
+    "noise"
 };
 
 #if 0

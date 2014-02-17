@@ -282,4 +282,27 @@ END
 
 // }}}
 
+// (96 - 99) noises {{{
+
+OPCODE (96, "noise/make", noise_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "snk")
+    ARG (A_NAT, "seed")
+END
+
+OPCODE (97, "noise/seed", noise_seed)
+    ARG (A_REG + T_NOISE, "self")
+    ARG (A_NAT, "seed")
+END
+
+OPCODE (98, "noise/white", noise_white)
+    ARG (A_REG + T_NOISE, "self")
+END
+
+OPCODE (99, "noise/pink", noise_pink)
+    ARG (A_REG + T_NOISE, "self")
+END
+
+// }}}
+
 // vim:fdm=marker:
