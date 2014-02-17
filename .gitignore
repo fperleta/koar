@@ -3,3 +3,4 @@ doc/*
 obj/*
 **/.*.d
 *.swp
+*.aif
