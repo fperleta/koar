@@ -200,4 +200,26 @@ cos2piMake src snk = do
 
 -- }}}
 
+-- lookup {{{
+
+lookupMake :: Ref s Array -> Ref s P -> Ref s P -> Score s (Ref s Lookup)
+lookupMake tbl src snk = do
+    r <- freshRef TagLookup
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regTbl <- regE tbl
+        regSrc <- regE src
+        regSnk <- regE snk
+        genE . emit $ I_lookup_make reg regTbl regSrc regSnk
+    return r
+
+lookupTable :: Ref s Lookup -> Ref s Array -> Score s ()
+lookupTable r tbl = event $ do
+    reg <- regE r
+    regTbl <- regE tbl
+    genE . emit $ I_lookup_table reg regTbl
+
+-- }}}
+
 -- vim:fdm=marker:

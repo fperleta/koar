@@ -46,6 +46,12 @@ extern void array_partial (array_t, samp_t, unsigned, double); // amp, freq, pha
 
 // }}}
 
+// lookup {{{
+
+extern void array_lookup (array_t, const samp_t*, samp_t*, size_t);
+
+// }}}
+
 #endif /* koar/array.h */
 
 // vim:fdm=marker:

@@ -24,6 +24,7 @@ typedef enum {
     T_ENV,
     T_PHASOR,
     T_COS2PI,
+    T_LOOKUP,
 
     NUM_REGTAGS
 } regtag_t;

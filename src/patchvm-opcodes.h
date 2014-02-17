@@ -266,4 +266,20 @@ RESERVED (93)
 
 // }}}
 
+// (94 - 95) lookups {{{
+
+OPCODE (94, "lookup/make", lookup_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_ARRAY, "table")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (95, "lookup/table", lookup_table)
+    ARG (A_REG + T_LOOKUP, "self")
+    ARG (A_REG + T_ARRAY, "table")
+END
+
+// }}}
+
 // vim:fdm=marker:

@@ -420,13 +420,15 @@ static const struct {
 
 static const char* regtag_strings[] = {
     "blank",
+    "array",
     "pnode",
     "wire",
     "fwriter1",
     "fwriter2",
     "env",
     "phasor",
-    "cos2pi"
+    "cos2pi",
+    "lookup"
 };
 
 #if 0
@@ -531,6 +533,10 @@ patchvm_blank (patchvm_t vm, unsigned reg)
 
     switch (r.tag)
     {
+        case T_ARRAY:
+            array_release (r.arr);
+            break;
+
         case T_PNODE:
             pnode_release (r.pn);
             break;
@@ -541,6 +547,7 @@ patchvm_blank (patchvm_t vm, unsigned reg)
         case T_ENV:
         case T_PHASOR:
         case T_COS2PI:
+        case T_LOOKUP:
             anode_release (r.an);
             break;
 

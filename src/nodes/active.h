@@ -7,6 +7,7 @@
 #ifndef KOAR_NODES_ACTIVE_H
 #define KOAR_NODES_ACTIVE_H
 
+#include "array.h"
 #include "buf.h"
 #include "patch.h"
 #include "defs.h"
@@ -31,6 +32,13 @@ extern void N_env_xdec (anode_t, samp_t, double);
 extern anode_t N_fwriter1_make (patch_t, const char*, pnode_t);
 extern anode_t N_fwriter2_make (patch_t, const char*, pnode_t, pnode_t);
 extern void N_fwriter_close (patch_t, anode_t);
+
+// }}}
+
+// lookups {{{
+
+extern anode_t N_lookup_make (patch_t, array_t, pnode_t, pnode_t);
+extern void N_lookup_table (anode_t, array_t);
 
 // }}}
 

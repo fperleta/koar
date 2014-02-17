@@ -93,6 +93,11 @@ data Instr
 
     -- cos2pis:
     | I_cos2pi_make Reg Reg Reg
+
+    -- lookups:
+    | I_lookup_make Reg Reg Reg Reg
+    | I_lookup_table Reg Reg
+
   deriving (Eq, Show)
 
 -- }}}
@@ -130,8 +135,8 @@ bInstr x = case x of
 
     I_array_make r k x0         -> bNat 16 <> bNat r <> bNat k <> bDbl x0
     I_array_const r x0          -> bNat 17 <> bNat r <> bDbl x0
-    I_array_normalize r amp     -> bNat 18 <> bDbl amp
-    I_array_dc r offset         -> bNat 19 <> bDbl offset
+    I_array_normalize r amp     -> bNat 18 <> bNat r <> bDbl amp
+    I_array_dc r offset         -> bNat 19 <> bNat r <> bDbl offset
     I_array_partial r a k th    -> bNat 20 <> bNat r <> bDbl a <> bNat k <> bDbl th
 
     I_sum r                     -> bNat 64 <> bNat r
@@ -156,6 +161,9 @@ bInstr x = case x of
     I_phasor_jump r phase       -> bNat 91 <> bNat r <> bDbl phase
 
     I_cos2pi_make r src snk     -> bNat 92 <> bNat r <> bNat src <> bNat snk
+
+    I_lookup_make r tbl src snk -> bNat 94 <> bNat r <> bNat tbl <> bNat src <> bNat snk
+    I_lookup_table r tbl        -> bNat 95 <> bNat r <> bNat tbl
 
 -- }}}
 

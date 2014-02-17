@@ -97,7 +97,9 @@ PATCHVM_array_const (patchvm_t vm, instr_t instr)
 {
     array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
     double x0 = instr->args[1].dbl;
+    array_lock (arr);
     array_const (arr, x0);
+    array_unlock (arr);
 }
 
 // }}}
@@ -127,7 +129,9 @@ PATCHVM_array_normalize (patchvm_t vm, instr_t instr)
 {
     array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
     double amp = instr->args[1].dbl;
+    array_lock (arr);
     array_normalize (arr, amp);
+    array_unlock (arr);
 }
 
 // }}}
@@ -155,7 +159,9 @@ PATCHVM_array_dc (patchvm_t vm, instr_t instr)
 {
     array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
     double offset = instr->args[1].dbl;
+    array_lock (arr);
     array_dc (arr, offset);
+    array_unlock (arr);
 }
 
 // }}}
@@ -171,7 +177,7 @@ array_partial (array_t arr, samp_t amp, unsigned index, double phase)
     double x, dx = index / (double) arr->size;
 
     for (i = 0, x = phase; i < arr->size; i++, x += dx)
-        xs[i] = amp * sin (2 * M_PI * x);
+        xs[i] += amp * sin (2 * M_PI * x);
 }
 
 void
@@ -181,7 +187,39 @@ PATCHVM_array_partial (patchvm_t vm, instr_t instr)
     double amp = instr->args[1].dbl;
     unsigned index = instr->args[2].nat;
     double phase = instr->args[3].dbl;
+    array_lock (arr);
     array_partial (arr, amp, index, phase);
+    array_unlock (arr);
+}
+
+// }}}
+
+// lookup {{{
+
+void
+array_lookup (array_t arr, const samp_t* xs, samp_t* ys, size_t len)
+{
+    size_t i, n = arr->size;
+    samp_t* as = arr->xs;
+
+    for (i = 0; i < len; i++)
+    {
+        samp_t x = (1 + xs[i] - floor (xs[i])) * n;
+        size_t k = floor (x);
+        samp_t p = x - floor (x);
+
+        size_t x_0 = (k - 1) % n;
+        size_t x_1 = (k + 0) % n;
+        size_t x_2 = (k + 1) % n;
+        size_t x_3 = (k + 2) % n;
+
+        samp_t c0 = as[x_1];
+        samp_t c1 = 0.5 * (as[x_2] - as[x_0]);
+        samp_t c2 = as[x_0] - 2.5 * as[x_1] + 2 * as[x_2] - 0.5 * as[x_3];
+        samp_t c3 = 0.5 * (as[x_3] - as[x_0]) + 1.5 * (as[x_1] - as[x_2]);
+
+        ys[i] = ((c3 * p + c2) * p + c1) * p + c0;
+    }
 }
 
 // }}}
