@@ -43,6 +43,8 @@ MACRO void array_unlock (array_t arr)
 extern void array_const (array_t, samp_t);
 extern void array_normalize (array_t, samp_t);
 extern void array_partial (array_t, samp_t, unsigned, double); // amp, freq, phase
+extern void array_ghw (array_t, double, double); // α, β
+extern void array_bw (array_t, double, double, double); // α₀, α₁, α₃
 
 // }}}
 

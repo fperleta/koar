@@ -194,6 +194,59 @@ PATCHVM_array_partial (patchvm_t vm, instr_t instr)
 
 // }}}
 
+// ghw {{{
+
+void
+array_ghw (array_t arr, double alpha, double beta)
+{
+    size_t i, len = arr->size;
+    double x, dx = 2 * M_PI / (len - 1.0);
+    samp_t* xs = arr->xs;
+
+    for (i = 0, x = -M_PI; i < len; i++, x += dx)
+        xs[i] *= alpha - beta * cos (x);
+}
+
+void
+PATCHVM_array_ghw (patchvm_t vm, instr_t instr)
+{
+    array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
+    double alpha = instr->args[1].dbl;
+    double beta = instr->args[2].dbl;
+    array_lock (arr);
+    array_ghw (arr, alpha, beta);
+    array_unlock (arr);
+}
+
+// }}}
+
+// bw {{{
+
+void
+array_bw (array_t arr, double a0, double a1, double a2)
+{
+    size_t i, len = arr->size;
+    double x, dx = 2 * M_PI / (len - 1.0);
+    samp_t* xs = arr->xs;
+
+    for (i = 0, x = -M_PI; i < len; i++, x += dx)
+        xs[i] *= a0 + a1 * cos (x) + a2 * cos (2 * x);
+}
+
+void
+PATCHVM_array_bw (patchvm_t vm, instr_t instr)
+{
+    array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
+    double a0 = instr->args[1].dbl;
+    double a1 = instr->args[2].dbl;
+    double a2 = instr->args[3].dbl;
+    array_lock (arr);
+    array_bw (arr, a0, a1, a2);
+    array_unlock (arr);
+}
+
+// }}}
+
 // lookup {{{
 
 void

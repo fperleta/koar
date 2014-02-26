@@ -81,9 +81,20 @@ OPCODE (20, "array/partial", array_partial)
     ARG (A_DOUBLE, "phase")
 END
 
+OPCODE (21, "array/ghw", array_ghw)
+    ARG (A_REG + T_ARRAY, "self")
+    ARG (A_DOUBLE, "alpha")
+    ARG (A_DOUBLE, "beta")
+END
+
+OPCODE (22, "array/bw", array_bw)
+    ARG (A_REG + T_ARRAY, "self")
+    ARG (A_DOUBLE, "a0")
+    ARG (A_DOUBLE, "a1")
+    ARG (A_DOUBLE, "a2")
+END
+
 // {{{
-RESERVED (21)
-RESERVED (22)
 RESERVED (23)
 RESERVED (24)
 RESERVED (25)

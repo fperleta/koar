@@ -43,6 +43,16 @@ arrayPartial r amp index phase = event $ do
     reg <- regE r
     genE . emit $ I_array_partial reg amp index phase
 
+arrayGHW :: Ref s Array -> Double -> Double -> Score s ()
+arrayGHW r alpha beta = event $ do
+    reg <- regE r
+    genE . emit $ I_array_ghw reg alpha beta
+
+arrayBW :: Ref s Array -> Double -> Double -> Double -> Score s ()
+arrayBW r a0 a1 a2 = event $ do
+    reg <- regE r
+    genE . emit $ I_array_bw reg a0 a1 a2
+
 -- }}}
 
 -- passive nodes {{{
