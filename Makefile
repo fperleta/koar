@@ -1,7 +1,7 @@
 
-.PHONY: all koar clean
+.PHONY: all prepare koar clean
 
-all:	koar
+all:	prepare koar
 
 include config.mk
 
@@ -16,6 +16,11 @@ SRCS=$(OBJS:obj/%.o=src/%.c)
 DEPS=$(join $(dir $(SRCS)), $(addprefix ., $(notdir $(SRCS:.c=.d))))
 
 include $(DEPS)
+
+prepare:
+	@if [ ! -d bin ]; then mkdir bin; fi
+	@if [ ! -d obj ]; then mkdir obj; fi
+	@if [ ! -d obj/nodes ]; then mkdir obj/nodes; fi
 
 koar:	bin/koar
 bin/koar:	$(OBJS)
