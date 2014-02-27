@@ -49,6 +49,12 @@ extern void array_pcw (array_t, double); // exponent
 
 // }}}
 
+// file input {{{
+
+extern int array_load (array_t*, size_t, const char*);
+
+// }}}
+
 // lookup {{{
 
 extern void array_lookup (array_t, const samp_t*, samp_t*, size_t);

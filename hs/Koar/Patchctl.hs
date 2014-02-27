@@ -72,6 +72,8 @@ data Instr
     | I_array_ghw Reg Double Double
     | I_array_bw Reg Double Double Double
     | I_array_pcw Reg Double
+    | I_array_load1 String Reg
+    | I_array_load2 String Reg Reg
 
     -- passive nodes:
     | I_sum Reg
@@ -156,6 +158,8 @@ bInstr x = case x of
     I_array_ghw r alpha beta    -> bNat 21 <> bNat r <> bDbl alpha <> bDbl beta
     I_array_bw r a0 a1 a2       -> bNat 22 <> bNat r <> bDbl a0 <> bDbl a1 <> bDbl a2
     I_array_pcw r e             -> bNat 23 <> bNat r <> bDbl e
+    I_array_load1 fn o          -> bNat 24 <> bStr fn <> bNat o
+    I_array_load2 fn l r        -> bNat 25 <> bStr fn <> bNat l <> bNat r
 
     I_sum r                     -> bNat 64 <> bNat r
     I_prod r                    -> bNat 65 <> bNat r

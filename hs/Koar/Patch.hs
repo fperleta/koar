@@ -58,6 +58,26 @@ arrayPCW r e = event $ do
     reg <- regE r
     genE . emit $ I_array_pcw reg e
 
+arrayLoad1 :: String -> Score s (Ref s Array)
+arrayLoad1 fn = do
+    r <- freshRef TagArray
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        genE . emit $ I_array_load1 fn reg
+    return r
+
+arrayLoad2 :: String -> Score s (Ref s Array, Ref s Array)
+arrayLoad2 fn = do
+    rL <- freshRef TagArray
+    rR <- freshRef TagArray
+    fr <- here
+    event $ do
+        regL <- newE rL fr
+        regR <- newE rR fr
+        genE . emit $ I_array_load2 fn regL regR
+    return (rL, rR)
+
 -- }}}
 
 -- passive nodes {{{

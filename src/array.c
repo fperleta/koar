@@ -4,6 +4,7 @@
  * copyright (c) 2014 Frano Perleta
  */
 
+#include <sndfile.h>
 #include "patchvm.h"
 #include "array.h"
 
@@ -268,6 +269,74 @@ PATCHVM_array_pcw (patchvm_t vm, instr_t instr)
     array_lock (arr);
     array_pcw (arr, e);
     array_unlock (arr);
+}
+
+// }}}
+
+// load {{{
+
+int
+array_load (array_t* as, size_t nchan, const char* fn)
+{
+    SF_INFO sfi;
+    sfi.format = 0;
+
+    SNDFILE* sf = sf_open (fn, SFM_READ, &sfi);
+    if (!sf)
+    {
+        log_emit (LOG_ERROR, "cannot opet %s for reading: %s", fn, sf_strerror (NULL));
+        return -1;
+    }
+
+    if (sfi.channels != (int) nchan)
+    {
+        log_emit (LOG_ERROR, "%s has %d channels, expected %zu", fn, sfi.channels, nchan);
+        sf_close (sf);
+        return -1;
+    }
+
+    size_t len = sfi.frames;
+    size_t i, j;
+
+    for (i = 0; i < nchan; i++)
+        as[i] = array_create (len);
+
+    for (j = 0; j < len; j++)
+    {
+        samp_t buf[nchan];
+        sf_readf_float (sf, buf, 1);
+        for (i = 0; i < nchan; i++)
+            as[i]->xs[j] = buf[i];
+    }
+
+    sf_close (sf);
+
+    return 0;
+}
+
+void
+PATCHVM_array_load1 (patchvm_t vm, instr_t instr)
+{
+    const char* fn = (char*) instr->args[0].utf8;
+    array_t as[1];
+    if (array_load (as, 1, fn) != 0)
+        patchvm_fail (vm);
+    else
+        patchvm_set (vm, instr->args[1].reg, (reg_t) { .tag = T_ARRAY, .arr = as[0] });
+}
+
+void
+PATCHVM_array_load2 (patchvm_t vm, instr_t instr)
+{
+    const char* fn = (char*) instr->args[0].utf8;
+    array_t as[2];
+    if (array_load (as, 2, fn) != 0)
+        patchvm_fail (vm);
+    else
+    {
+        patchvm_set (vm, instr->args[1].reg, (reg_t) { .tag = T_ARRAY, .arr = as[0] });
+        patchvm_set (vm, instr->args[2].reg, (reg_t) { .tag = T_ARRAY, .arr = as[1] });
+    }
 }
 
 // }}}

@@ -94,14 +94,23 @@ OPCODE (22, "array/bw", array_bw)
     ARG (A_DOUBLE, "a2")
 END
 
-OPCODE (24, "array/pcw", array_pcw)
+OPCODE (23, "array/pcw", array_pcw)
     ARG (A_REG + T_ARRAY, "self")
     ARG (A_DOUBLE, "e")
 END
 
+OPCODE (24, "array/load1", array_load1)
+    ARG (A_UTF8, "path")
+    ARG (A_ANYREG, "out")
+END
+
+OPCODE (25, "array/load2", array_load2)
+    ARG (A_UTF8, "path")
+    ARG (A_ANYREG, "left")
+    ARG (A_ANYREG, "right")
+END
+
 // {{{
-RESERVED (24)
-RESERVED (25)
 RESERVED (26)
 RESERVED (27)
 RESERVED (28)
