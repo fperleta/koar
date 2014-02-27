@@ -71,6 +71,7 @@ data Instr
     | I_array_partial Reg Double Nat Double
     | I_array_ghw Reg Double Double
     | I_array_bw Reg Double Double Double
+    | I_array_pcw Reg Double
 
     -- passive nodes:
     | I_sum Reg
@@ -154,6 +155,7 @@ bInstr x = case x of
     I_array_partial r a k th    -> bNat 20 <> bNat r <> bDbl a <> bNat k <> bDbl th
     I_array_ghw r alpha beta    -> bNat 21 <> bNat r <> bDbl alpha <> bDbl beta
     I_array_bw r a0 a1 a2       -> bNat 22 <> bNat r <> bDbl a0 <> bDbl a1 <> bDbl a2
+    I_array_pcw r e             -> bNat 23 <> bNat r <> bDbl e
 
     I_sum r                     -> bNat 64 <> bNat r
     I_prod r                    -> bNat 65 <> bNat r

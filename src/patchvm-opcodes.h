@@ -94,8 +94,12 @@ OPCODE (22, "array/bw", array_bw)
     ARG (A_DOUBLE, "a2")
 END
 
+OPCODE (24, "array/pcw", array_pcw)
+    ARG (A_REG + T_ARRAY, "self")
+    ARG (A_DOUBLE, "e")
+END
+
 // {{{
-RESERVED (23)
 RESERVED (24)
 RESERVED (25)
 RESERVED (26)

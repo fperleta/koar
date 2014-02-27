@@ -53,6 +53,11 @@ arrayBW r a0 a1 a2 = event $ do
     reg <- regE r
     genE . emit $ I_array_bw reg a0 a1 a2
 
+arrayPCW :: Ref s Array -> Double -> Score s ()
+arrayPCW r e = event $ do
+    reg <- regE r
+    genE . emit $ I_array_pcw reg e
+
 -- }}}
 
 -- passive nodes {{{

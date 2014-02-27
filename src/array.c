@@ -247,6 +247,31 @@ PATCHVM_array_bw (patchvm_t vm, instr_t instr)
 
 // }}}
 
+// pcw {{{
+
+void
+array_pcw (array_t arr, double e)
+{
+    size_t i, len = arr->size;
+    double x, dx = 2 * M_PI / (len - 1.0);
+    samp_t* xs = arr->xs;
+
+    for (i = 0, x = -M_PI; i < len; i++, x += dx)
+        xs[i] *= pow (cos (x), e);
+}
+
+void
+PATCHVM_array_pcw (patchvm_t vm, instr_t instr)
+{
+    array_t arr = patchvm_get (vm, instr->args[0].reg).arr;
+    double e = instr->args[1].dbl;
+    array_lock (arr);
+    array_pcw (arr, e);
+    array_unlock (arr);
+}
+
+// }}}
+
 // lookup {{{
 
 void

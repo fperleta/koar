@@ -45,6 +45,7 @@ extern void array_normalize (array_t, samp_t);
 extern void array_partial (array_t, samp_t, unsigned, double); // amp, freq, phase
 extern void array_ghw (array_t, double, double); // α, β
 extern void array_bw (array_t, double, double, double); // α₀, α₁, α₃
+extern void array_pcw (array_t, double); // exponent
 
 // }}}
 
