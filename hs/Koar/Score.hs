@@ -10,13 +10,9 @@ module Koar.Score
     , module Control.Monad
     , module Koar.Patchctl
 
-    -- time
-    , Secs(..)
-    , Units(..)
-
     -- quantities
-    , Time(..)
-    , Freq(..)
+    , Time(..), sec, msec
+    , Freq(..), hz
 
     -- resource kinds
     , Kind(..)
@@ -49,8 +45,8 @@ module Koar.Score
     , frame
 
     , sampleRate
-    , toPeriods
-    , toNormFreq
+    , toPeriods, toPeriods'
+    , toNormFreq, toNormFreq'
 
     ) where
 -- }}}
@@ -81,15 +77,73 @@ newtype Units = Units { unUnits :: Rational }
 
 -- quantities {{{
 
-data Time
-    = Sec Rational
-    | Cell Rational
-  deriving (Eq, Show)
+data Time = Time
+    { timeSecs   ::  {-# UNPACK #-} !Rational
+    , timeCells  ::  {-# UNPACK #-} !Rational
+    }
+  deriving (Eq)
 
-data Freq
-    = Hz Rational
-    | PerCell Rational
-  deriving (Eq, Show)
+sec :: Rational -> Time
+sec t = Time t 0
+{-# INLINE sec #-}
+
+msec :: Rational -> Time
+msec t = Time (t / 1000) 0
+{-# INLINE msec #-}
+
+instance Num Time where
+    Time s1 c1 + Time s2 c2 = Time (s1 + s2) (c1 + c2)
+    {-# INLINE (+) #-}
+    Time s1 c1 - Time s2 c2 = Time (s1 - s2) (c1 - c2)
+    {-# INLINE (-) #-}
+    negate (Time s c) = Time (negate s) (negate c)
+    {-# INLINE negate #-}
+    fromInteger = Time 0 . fromInteger
+    {-# INLINE fromInteger #-}
+
+    (*) = error "cannot multiply quantities of time"
+    abs = error "abs is undefined for time"
+    signum = error "signum is undefined for time"
+
+instance Fractional Time where
+    fromRational = Time 0
+    {-# INLINE fromRational #-}
+
+    (/) = error "cannot divide quantities of time"
+    recip = error "recip is undefined for time"
+
+
+
+data Freq = Freq
+    { freqHertz    ::  {-# UNPACK #-} !Rational
+    , freqPerCell  ::  {-# UNPACK #-} !Rational
+    }
+  deriving (Eq)
+
+hz :: Rational -> Freq
+hz f = Freq f 0
+{-# INLINE hz #-}
+
+instance Num Freq where
+    Freq h1 p1 + Freq h2 p2 = Freq (h1 + h2) (p1 + p2)
+    {-# INLINE (+) #-}
+    Freq h1 p1 - Freq h2 p2 = Freq (h1 - h2) (p1 - p2)
+    {-# INLINE (-) #-}
+    negate (Freq h p) = Freq (negate h) (negate p)
+    {-# INLINE negate #-}
+    fromInteger = Freq 0 . fromInteger
+    {-# INLINE fromInteger #-}
+
+    (*) = error "cannot multiply quantities of frequency"
+    abs = error "abs is undefined for frequencies"
+    signum = error "signum is undefined for frequencies"
+
+instance Fractional Freq where
+    fromRational = Freq 0
+    {-# INLINE fromRational #-}
+
+    (/) = error "cannot divide quantities of frequency"
+    recip = error "recip is undefined for frequencies"
 
 -- }}}
 
@@ -554,24 +608,26 @@ sampleRate :: Score s Int
 sampleRate = Score $ \s -> (hereRate $ scrHere s, s, Stop)
 
 toPeriods :: Time -> Score s Rational
-toPeriods q = Score $ \s -> let
+toPeriods t = Score $ \s -> let
     { h = scrHere s
     ; sr = fromIntegral $ hereRate h
     ; dt = unSecs $ hereDT h
-    ; p = case q of
-        Sec x -> x * sr
-        Cell x -> x * dt * sr
+    ; p = (timeSecs t + timeCells t * dt) * sr
     } in (p, s, Stop)
 
+toPeriods' :: Time -> Score s Double
+toPeriods' t = fromRational <$> toPeriods t
+
 toNormFreq :: Freq -> Score s Rational
-toNormFreq q = Score $ \s -> let
+toNormFreq f = Score $ \s -> let
     { h = scrHere s
     ; sr = fromIntegral $ hereRate h
     ; dt = unSecs $ hereDT h
-    ; p = case q of
-        Hz x -> x / sr
-        PerCell x -> x / (sr * dt)
+    ; p = (freqHertz f + freqPerCell f / dt) / sr
     } in (p, s, Stop)
+
+toNormFreq' :: Freq -> Score s Double
+toNormFreq' f = fromRational <$> toNormFreq f
 
 
 
@@ -583,17 +639,13 @@ localHere f x = Score $ \s ->
         (x', s'', es) -> (x', s'' { scrHere = scrHere s }, es)
 
 shift :: Time -> Score s a -> Score s a
-shift q = localHere $ \h@(Here { hereT0 = t0, hereDT = dt }) ->
-    let t = case q of
-            Sec x -> x
-            Cell x -> x * unSecs dt
-    in h { hereT0 = Secs $ unSecs t0 + t }
+shift t = localHere $ \h@(Here { hereT0 = t0, hereDT = dt }) ->
+    let d = timeSecs t + timeCells t * unSecs dt
+    in h { hereT0 = Secs $ unSecs t0 + d }
 
 scale :: Time -> Score s a -> Score s a
-scale q = localHere $ \h@(Here { hereDT = dt }) ->
-    let dt' = case q of
-            Sec x -> x
-            Cell x -> x * unSecs dt
+scale t = localHere $ \h@(Here { hereDT = dt }) ->
+    let dt' = timeSecs t + timeCells t * unSecs dt
     in h { hereDT = Secs dt' }
 
 here :: Score s (FRef s)
