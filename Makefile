@@ -6,7 +6,7 @@ all:	prepare koar
 include config.mk
 
 NODES_OBJS=cos2pi env fwriter lookup noise passive phasor touch wire
-KOAR_OBJS=array buf main patch patchctl patchvm peers
+KOAR_OBJS=array buf delay main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \
      $(addprefix obj/, $(KOAR_OBJS)) \
