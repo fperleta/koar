@@ -160,6 +160,8 @@ data Kind
     | Cos2pi
     | Lookup
     | Noise
+    | DW
+    | DTap
 
 data Tag :: Kind -> * where
     TagArray :: Tag Array
@@ -172,6 +174,8 @@ data Tag :: Kind -> * where
     TagCos2pi :: Tag Cos2pi
     TagLookup :: Tag Lookup
     TagNoise :: Tag Noise
+    TagDW :: Tag DW
+    TagDTap :: Tag DTap
 
 -- }}}
 
@@ -188,6 +192,8 @@ data Ref :: * -> Kind -> * where
     Rcos2pi :: Int -> Ref s Cos2pi
     Rlookup :: Int -> Ref s Lookup
     Rnoise :: Int -> Ref s Noise
+    Rdw :: Int -> Ref s DW
+    Rdtap :: Int -> Ref s DTap
 
 refFromInt :: Tag k -> Int -> Ref s k
 refFromInt tag n = case tag of
@@ -201,6 +207,8 @@ refFromInt tag n = case tag of
     TagCos2pi -> Rcos2pi n
     TagLookup -> Rlookup n
     TagNoise -> Rnoise n
+    TagDW -> Rdw n
+    TagDTap -> Rdtap n
 
 refToInt :: Ref s k -> Int
 refToInt r = case r of
@@ -214,6 +222,8 @@ refToInt r = case r of
     Rcos2pi k -> k
     Rlookup k -> k
     Rnoise k -> k
+    Rdw k -> k
+    Rdtap k -> k
 
 -- }}}
 
@@ -230,10 +240,12 @@ data RefMap s a = RefMap
     , refmCos2pi :: IntMap a
     , refmLookups :: IntMap a
     , refmNoise :: IntMap a
+    , refmDW :: IntMap a
+    , refmDTap :: IntMap a
     }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap e e e e e e e e e e
+refmEmpty = RefMap e e e e e e e e e e e e
   where
     e = IM.empty
 
@@ -249,6 +261,8 @@ refmInsert r x rm = case r of
     Rcos2pi k -> rm { refmCos2pi = IM.insert k x $ refmCos2pi rm }
     Rlookup k -> rm { refmLookups = IM.insert k x $ refmLookups rm }
     Rnoise k -> rm { refmNoise = IM.insert k x $ refmNoise rm }
+    Rdw k -> rm { refmDW = IM.insert k x $ refmDW rm }
+    Rdtap k -> rm { refmDTap = IM.insert k x $ refmDTap rm }
 
 refmLookup :: Ref s k -> RefMap s a -> Maybe a
 refmLookup r rm = case r of
@@ -262,6 +276,8 @@ refmLookup r rm = case r of
     Rcos2pi k -> IM.lookup k $ refmCos2pi rm
     Rlookup k -> IM.lookup k $ refmLookups rm
     Rnoise k -> IM.lookup k $ refmNoise rm
+    Rdw k -> IM.lookup k $ refmDW rm
+    Rdtap k -> IM.lookup k $ refmDTap rm
 
 refmDelete :: Ref s k -> RefMap s a -> RefMap s a
 refmDelete r rm = case r of
@@ -275,6 +291,8 @@ refmDelete r rm = case r of
     Rcos2pi k -> rm { refmCos2pi = IM.delete k $ refmCos2pi rm }
     Rlookup k -> rm { refmLookups = IM.delete k $ refmLookups rm }
     Rnoise k -> rm { refmNoise = IM.delete k $ refmNoise rm }
+    Rdw k -> rm { refmDW = IM.delete k $ refmDW rm }
+    Rdtap k -> rm { refmDTap = IM.delete k $ refmDTap rm }
 
 -- }}}
 
@@ -291,10 +309,12 @@ data RefSet s = RefSet
     , refsCos2pi :: IntSet
     , refsLookup :: IntSet
     , refsNoise :: IntSet
+    , refsDW :: IntSet
+    , refsDTap :: IntSet
     }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet e e e e e e e e e e
+refsEmpty = RefSet e e e e e e e e e e e e
   where
     e = IS.empty
 
@@ -310,6 +330,8 @@ refsInsert r rs = case r of
     Rcos2pi k -> rs { refsCos2pi = IS.insert k $ refsCos2pi rs }
     Rlookup k -> rs { refsLookup = IS.insert k $ refsLookup rs }
     Rnoise k -> rs { refsNoise = IS.insert k $ refsNoise rs }
+    Rdw k -> rs { refsDW = IS.insert k $ refsDW rs }
+    Rdtap k -> rs { refsDTap = IS.insert k $ refsDTap rs }
 
 refsMember :: Ref s k -> RefSet s -> Bool
 refsMember r rs = case r of
@@ -323,6 +345,8 @@ refsMember r rs = case r of
     Rcos2pi k -> IS.member k $ refsCos2pi rs
     Rlookup k -> IS.member k $ refsLookup rs
     Rnoise k -> IS.member k $ refsNoise rs
+    Rdw k -> IS.member k $ refsDW rs
+    Rdtap k -> IS.member k $ refsDTap rs
 
 refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
 refsFor rs f = do
@@ -336,6 +360,8 @@ refsFor rs f = do
     mapM_ (f . Rcos2pi) . IS.toList $ refsCos2pi rs
     mapM_ (f . Rlookup) . IS.toList $ refsLookup rs
     mapM_ (f . Rnoise) . IS.toList $ refsNoise rs
+    mapM_ (f . Rdw) . IS.toList $ refsDW rs
+    mapM_ (f . Rdtap) . IS.toList $ refsDTap rs
 
 -- }}}
 
@@ -590,6 +616,8 @@ freshRef tag = Score $ \s ->
         TagCos2pi -> (Rcos2pi n, s', Stop)
         TagLookup -> (Rlookup n, s', Stop)
         TagNoise -> (Rnoise n, s', Stop)
+        TagDW -> (Rdw n, s', Stop)
+        TagDTap -> (Rdtap n, s', Stop)
 
 freshFRef :: Score s (FRef s)
 freshFRef = Score $ \s ->

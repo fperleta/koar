@@ -431,7 +431,9 @@ static const char* regtag_strings[] = {
     "phasor",
     "cos2pi",
     "lookup",
-    "noise"
+    "noise",
+    "dw",
+    "dtap"
 };
 
 #if 0

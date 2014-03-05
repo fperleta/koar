@@ -18,6 +18,19 @@ extern anode_t N_cos2pi_make (patch_t, pnode_t, pnode_t);
 
 // }}}
 
+// dtaps {{{
+
+extern anode_t N_dtap_make (patch_t, pnode_t, anode_t, size_t);
+extern void N_dtap_adjust (anode_t, size_t);
+
+// }}}
+
+// dwriters {{{
+
+extern anode_t N_dwriter_make (patch_t, pnode_t, size_t);
+
+// }}}
+
 // envs {{{
 
 extern anode_t N_env_make (patch_t, pnode_t, samp_t);

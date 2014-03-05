@@ -286,4 +286,42 @@ noisePink r = event $ do
 
 -- }}}
 
+-- dwriter {{{
+
+dwriterMake :: Ref s P -> Time -> Score s (Ref s DW)
+dwriterMake src t = do
+    periods <- floor <$> toPeriods' t
+    r <- freshRef TagDW
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        genE . emit $ I_dwriter_make reg regSrc periods
+    return r
+
+-- }}}
+
+-- dtap {{{
+
+dtapMake :: Ref s P -> Ref s DW -> Time -> Score s (Ref s DTap)
+dtapMake snk from t = do
+    offs <- floor <$> toPeriods' t
+    r <- freshRef TagDTap
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSnk <- regE snk
+        regFrom <- regE from
+        genE . emit $ I_dtap_make reg regSnk regFrom offs
+    return r
+
+dtapAdjust :: Ref s DTap -> Time -> Score s ()
+dtapAdjust tap t = do
+    offs <- floor <$> toPeriods' t
+    event $ do
+        reg <- regE tap
+        genE . emit $ I_dtap_adjust reg offs
+
+-- }}}
+
 -- vim:fdm=marker:

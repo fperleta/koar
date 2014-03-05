@@ -29,6 +29,18 @@ score = scale (sec $ 60 / 163) $ do
     wireMake master outL 1
     wireMake master outR 1
 
+    echo <- makeSum
+    wireMake echo master 1
+    dw <- dwriterMake echo (sec 4)
+
+    rec1 <- makeSum
+    wireMake rec1 echo 0.75
+    dtapMake rec1 dw . fromRational $ 2 / 3
+
+    rec2 <- makeSum
+    wireMake rec2 echo 0.1
+    dtapMake rec2 dw . fromRational $ 1 / 5
+
     wave <- arrayMake 1024 0
     arrayPartial wave 1 1 0
     arrayPartial wave 0.3 2 0.1
@@ -52,6 +64,11 @@ score = scale (sec $ 60 / 163) $ do
             shift (fromRational $ i / 2) $ noise master 0.2 0.125
 
     frame 16 $ do
+        shift 0 $ bass echo 0.5 (hz 440) (hz 880) (msec 50)
+        shift 7 $ bass echo 0.5 (hz 1760) (hz 880) (msec 50)
+
+    {--}
+    frame 16 $ do
         --shift (Cell 0.5) $ pluck master wave 0.3 (hz 110) (Cell 3)
         --shift (Cell 1.5) $ pluck master wave 0.3 (hz 220) (Cell 2.5)
 
@@ -68,6 +85,7 @@ score = scale (sec $ 60 / 163) $ do
         shift 4 $ basicStep >> basicBass
         shift 8 $ basicStep >> basicBass >> basicHihat
         shift 12 $ basicStep >> basicBass >> basicHihat
+    --}
 
 
 bass :: Ref s P -> Double -> Freq -> Freq -> Time -> Score s ()

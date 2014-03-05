@@ -27,6 +27,8 @@ typedef enum {
     T_COS2PI,
     T_LOOKUP,
     T_NOISE,
+    T_DWRITER,
+    T_DTAP,
 
     NUM_REGTAGS
 } regtag_t;

@@ -329,4 +329,32 @@ END
 
 // }}}
 
+// (100 - 101) dwriters {{{
+
+OPCODE (100, "dwriter/make", dwriter_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_NAT, "size")
+END
+
+RESERVED (101)
+
+// }}}
+
+// (102 - 103) dtaps {{{
+
+OPCODE (102, "dtap/make", dtap_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "snk")
+    ARG (A_REG + T_DWRITER, "from")
+    ARG (A_NAT, "offs")
+END
+
+OPCODE (103, "dtap/adjust", dtap_adjust)
+    ARG (A_REG + T_DTAP, "self")
+    ARG (A_NAT, "offs")
+END
+
+// }}}
+
 // vim:fdm=marker:

@@ -115,6 +115,13 @@ data Instr
     | I_noise_white Reg
     | I_noise_pink Reg
 
+    -- dwriters:
+    | I_dwriter_make Reg Reg Nat
+
+    -- dtaps:
+    | I_dtap_make Reg Reg Reg Nat
+    | I_dtap_adjust Reg Nat
+
   deriving (Eq, Show)
 
 -- }}}
@@ -191,6 +198,11 @@ bInstr x = case x of
     I_noise_seed r seed         -> bNat 97 <> bNat r <> bNat seed
     I_noise_white r             -> bNat 98 <> bNat r
     I_noise_pink r              -> bNat 99 <> bNat r
+
+    I_dwriter_make r src size   -> bNat 100 <> bNat r <> bNat src <> bNat size
+
+    I_dtap_make r snk from offs -> bNat 102 <> bNat r <> bNat snk <> bNat from <> bNat offs
+    I_dtap_adjust r offs        -> bNat 103 <> bNat r <> bNat offs
 
 -- }}}
 
