@@ -149,6 +149,8 @@ instance Fractional Freq where
 
 -- resource kinds {{{
 
+-- data Kind {{{
+
 data Kind
     = Array
     | P -- passive nodes
@@ -162,6 +164,10 @@ data Kind
     | Noise
     | DW
     | DTap
+
+-- }}}
+
+-- data Tag {{{
 
 data Tag :: Kind -> * where
     TagArray :: Tag Array
@@ -179,189 +185,182 @@ data Tag :: Kind -> * where
 
 -- }}}
 
+-- data TagProd {{{
+
+data TagProd a = TagProd
+    { tpArray :: a
+    , tpP :: a
+    , tpWire :: a
+    , tpFW1 :: a
+    , tpFW2 :: a
+    , tpEnv :: a
+    , tpPhasor :: a
+    , tpCos2pi :: a
+    , tpLookup :: a
+    , tpNoise :: a
+    , tpDW :: a
+    , tpDTap :: a
+    }
+
+diagTP :: a -> TagProd a
+diagTP x = TagProd x x x x x x x x x x x x
+
+mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
+mapTP f tp =
+    [ f TagArray $ tpArray tp
+    , f TagP $ tpP tp
+    , f TagWire $ tpWire tp
+    , f TagFW1 $ tpFW1 tp
+    , f TagFW2 $ tpFW2 tp
+    , f TagEnv $ tpEnv tp
+    , f TagPhasor $ tpPhasor tp
+    , f TagCos2pi $ tpCos2pi tp
+    , f TagLookup $ tpLookup tp
+    , f TagNoise $ tpNoise tp
+    , f TagDW $ tpDW tp
+    , f TagDTap $ tpDTap tp
+    ]
+
+-- }}}
+
+-- class IsKind {{{
+
+class IsKind k where
+    kindTag :: Tag k
+    getTP :: Tag k -> TagProd a -> a
+    setTP :: Tag k -> a -> TagProd a -> TagProd a
+
+modifyTP :: (IsKind k) => Tag k -> (a -> a) -> TagProd a -> TagProd a
+modifyTP tag f tp = setTP tag (f $ getTP tag tp) tp
+{-# INLINE modifyTP #-}
+
+-- }}}
+
+-- instances {{{
+
+instance IsKind Array where
+    kindTag = TagArray
+    getTP _ = tpArray
+    setTP _ x tp = tp { tpArray = x }
+
+instance IsKind P where
+    kindTag = TagP
+    getTP _ = tpP
+    setTP _ x tp = tp { tpP = x }
+
+instance IsKind Wire where
+    kindTag = TagWire
+    getTP _ = tpWire
+    setTP _ x tp = tp { tpWire = x }
+
+instance IsKind FW1 where
+    kindTag = TagFW1
+    getTP _ = tpFW1
+    setTP _ x tp = tp { tpFW1 = x }
+
+instance IsKind FW2 where
+    kindTag = TagFW2
+    getTP _ = tpFW2
+    setTP _ x tp = tp { tpFW2 = x }
+
+instance IsKind Env where
+    kindTag = TagEnv
+    getTP _ = tpEnv
+    setTP _ x tp = tp { tpEnv = x }
+
+instance IsKind Phasor where
+    kindTag = TagPhasor
+    getTP _ = tpPhasor
+    setTP _ x tp = tp { tpPhasor = x }
+
+instance IsKind Cos2pi where
+    kindTag = TagCos2pi
+    getTP _ = tpCos2pi
+    setTP _ x tp = tp { tpCos2pi = x }
+
+instance IsKind Lookup where
+    kindTag = TagLookup
+    getTP _ = tpLookup
+    setTP _ x tp = tp { tpLookup = x }
+
+instance IsKind Noise where
+    kindTag = TagNoise
+    getTP _ = tpNoise
+    setTP _ x tp = tp { tpNoise = x }
+
+instance IsKind DW where
+    kindTag = TagDW
+    getTP _ = tpDW
+    setTP _ x tp = tp { tpDW = x }
+
+instance IsKind DTap where
+    kindTag = TagDTap
+    getTP _ = tpDTap
+    setTP _ x tp = tp { tpDTap = x }
+
+-- }}}
+
+-- }}}
+
+-- references {{{
+
 -- refs {{{
 
 data Ref :: * -> Kind -> * where
-    Rarray :: Int -> Ref s Array
-    Rp :: Int -> Ref s P
-    Rwire :: Int -> Ref s Wire
-    Rfw1 :: Int -> Ref s FW1
-    Rfw2 :: Int -> Ref s FW2
-    Renv :: Int -> Ref s Env
-    Rphasor :: Int -> Ref s Phasor
-    Rcos2pi :: Int -> Ref s Cos2pi
-    Rlookup :: Int -> Ref s Lookup
-    Rnoise :: Int -> Ref s Noise
-    Rdw :: Int -> Ref s DW
-    Rdtap :: Int -> Ref s DTap
-
-refFromInt :: Tag k -> Int -> Ref s k
-refFromInt tag n = case tag of
-    TagArray -> Rarray n
-    TagP -> Rp n
-    TagWire -> Rwire n
-    TagFW1 -> Rfw1 n
-    TagFW2 -> Rfw2 n
-    TagEnv -> Renv n
-    TagPhasor -> Rphasor n
-    TagCos2pi -> Rcos2pi n
-    TagLookup -> Rlookup n
-    TagNoise -> Rnoise n
-    TagDW -> Rdw n
-    TagDTap -> Rdtap n
+    Ref :: Tag k -> {-# UNPACK #-} !Int -> Ref s k
 
 refToInt :: Ref s k -> Int
-refToInt r = case r of
-    Rarray k -> k
-    Rp k -> k
-    Rwire k -> k
-    Rfw1 k -> k
-    Rfw2 k -> k
-    Renv k -> k
-    Rphasor k -> k
-    Rcos2pi k -> k
-    Rlookup k -> k
-    Rnoise k -> k
-    Rdw k -> k
-    Rdtap k -> k
+refToInt (Ref _ k) = k
+{-# INLINE refToInt #-}
 
 -- }}}
 
 -- refmaps {{{
 
-data RefMap s a = RefMap
-    { refmArray :: IntMap a
-    , refmP :: IntMap a
-    , refmWire :: IntMap a
-    , refmFW1 :: IntMap a
-    , refmFW2 :: IntMap a
-    , refmEnv :: IntMap a
-    , refmPhasor :: IntMap a
-    , refmCos2pi :: IntMap a
-    , refmLookups :: IntMap a
-    , refmNoise :: IntMap a
-    , refmDW :: IntMap a
-    , refmDTap :: IntMap a
-    }
+newtype RefMap s a = RefMap { unRefMap :: TagProd (IntMap a) }
 
 refmEmpty :: RefMap s a
-refmEmpty = RefMap e e e e e e e e e e e e
-  where
-    e = IM.empty
+refmEmpty = RefMap $ diagTP IM.empty
+{-# INLINE refmEmpty #-}
 
-refmInsert :: Ref s k -> a -> RefMap s a -> RefMap s a
-refmInsert r x rm = case r of
-    Rarray k -> rm { refmArray = IM.insert k x $ refmArray rm }
-    Rp k -> rm { refmP = IM.insert k x $ refmP rm }
-    Rwire k -> rm { refmWire = IM.insert k x $ refmWire rm }
-    Rfw1 k -> rm { refmFW1 = IM.insert k x $ refmFW1 rm }
-    Rfw2 k -> rm { refmFW2 = IM.insert k x $ refmFW2 rm }
-    Renv k -> rm { refmEnv = IM.insert k x $ refmEnv rm }
-    Rphasor k -> rm { refmPhasor = IM.insert k x $ refmPhasor rm }
-    Rcos2pi k -> rm { refmCos2pi = IM.insert k x $ refmCos2pi rm }
-    Rlookup k -> rm { refmLookups = IM.insert k x $ refmLookups rm }
-    Rnoise k -> rm { refmNoise = IM.insert k x $ refmNoise rm }
-    Rdw k -> rm { refmDW = IM.insert k x $ refmDW rm }
-    Rdtap k -> rm { refmDTap = IM.insert k x $ refmDTap rm }
+refmLookup :: (IsKind k) => Ref s k -> RefMap s a -> Maybe a
+refmLookup (Ref tag k) = IM.lookup k . getTP tag . unRefMap
+{-# INLINE refmLookup #-}
 
-refmLookup :: Ref s k -> RefMap s a -> Maybe a
-refmLookup r rm = case r of
-    Rarray k -> IM.lookup k $ refmArray rm
-    Rp k -> IM.lookup k $ refmP rm
-    Rwire k -> IM.lookup k $ refmWire rm
-    Rfw1 k -> IM.lookup k $ refmFW1 rm
-    Rfw2 k -> IM.lookup k $ refmFW2 rm
-    Renv k -> IM.lookup k $ refmEnv rm
-    Rphasor k -> IM.lookup k $ refmPhasor rm
-    Rcos2pi k -> IM.lookup k $ refmCos2pi rm
-    Rlookup k -> IM.lookup k $ refmLookups rm
-    Rnoise k -> IM.lookup k $ refmNoise rm
-    Rdw k -> IM.lookup k $ refmDW rm
-    Rdtap k -> IM.lookup k $ refmDTap rm
+refmInsert :: (IsKind k) => Ref s k -> a -> RefMap s a -> RefMap s a
+refmInsert (Ref tag k) x = RefMap . modifyTP tag (IM.insert k x) . unRefMap
+{-# INLINE refmInsert #-}
 
-refmDelete :: Ref s k -> RefMap s a -> RefMap s a
-refmDelete r rm = case r of
-    Rarray k -> rm { refmArray = IM.delete k $ refmArray rm }
-    Rp k -> rm { refmP = IM.delete k $ refmP rm }
-    Rwire k -> rm { refmWire = IM.delete k $ refmWire rm }
-    Rfw1 k -> rm { refmFW1 = IM.delete k $ refmFW1 rm }
-    Rfw2 k -> rm { refmFW2 = IM.delete k $ refmFW2 rm }
-    Renv k -> rm { refmEnv = IM.delete k $ refmEnv rm }
-    Rphasor k -> rm { refmPhasor = IM.delete k $ refmPhasor rm }
-    Rcos2pi k -> rm { refmCos2pi = IM.delete k $ refmCos2pi rm }
-    Rlookup k -> rm { refmLookups = IM.delete k $ refmLookups rm }
-    Rnoise k -> rm { refmNoise = IM.delete k $ refmNoise rm }
-    Rdw k -> rm { refmDW = IM.delete k $ refmDW rm }
-    Rdtap k -> rm { refmDTap = IM.delete k $ refmDTap rm }
+refmDelete :: (IsKind k) => Ref s k -> RefMap s a -> RefMap s a
+refmDelete (Ref tag k) = RefMap . modifyTP tag (IM.delete k) . unRefMap
+{-# INLINE refmDelete #-}
 
 -- }}}
 
 -- refsets {{{
 
-data RefSet s = RefSet
-    { refsArray :: IntSet
-    , refsP :: IntSet
-    , refsWire :: IntSet
-    , refsFW1 :: IntSet
-    , refsFW2 :: IntSet
-    , refsEnv :: IntSet
-    , refsPhasor :: IntSet
-    , refsCos2pi :: IntSet
-    , refsLookup :: IntSet
-    , refsNoise :: IntSet
-    , refsDW :: IntSet
-    , refsDTap :: IntSet
-    }
+newtype RefSet s = RefSet { unRefSet :: TagProd IntSet }
 
 refsEmpty :: RefSet s
-refsEmpty = RefSet e e e e e e e e e e e e
-  where
-    e = IS.empty
+refsEmpty = RefSet $ diagTP IS.empty
+{-# INLINE refsEmpty #-}
 
-refsInsert :: Ref s k -> RefSet s -> RefSet s
-refsInsert r rs = case r of
-    Rarray k -> rs { refsArray = IS.insert k $ refsArray rs }
-    Rp k -> rs { refsP = IS.insert k $ refsP rs }
-    Rwire k -> rs { refsWire = IS.insert k $ refsWire rs }
-    Rfw1 k -> rs { refsFW1 = IS.insert k $ refsFW1 rs }
-    Rfw2 k -> rs { refsFW2 = IS.insert k $ refsFW2 rs }
-    Renv k -> rs { refsEnv = IS.insert k $ refsEnv rs }
-    Rphasor k -> rs { refsPhasor = IS.insert k $ refsPhasor rs }
-    Rcos2pi k -> rs { refsCos2pi = IS.insert k $ refsCos2pi rs }
-    Rlookup k -> rs { refsLookup = IS.insert k $ refsLookup rs }
-    Rnoise k -> rs { refsNoise = IS.insert k $ refsNoise rs }
-    Rdw k -> rs { refsDW = IS.insert k $ refsDW rs }
-    Rdtap k -> rs { refsDTap = IS.insert k $ refsDTap rs }
+refsMember :: (IsKind k) => Ref s k -> RefSet s -> Bool
+refsMember (Ref tag k) = IS.member k . getTP tag . unRefSet
+{-# INLINE refsMember #-}
 
-refsMember :: Ref s k -> RefSet s -> Bool
-refsMember r rs = case r of
-    Rarray k -> IS.member k $ refsArray rs
-    Rp k -> IS.member k $ refsP rs
-    Rwire k -> IS.member k $ refsWire rs
-    Rfw1 k -> IS.member k $ refsFW1 rs
-    Rfw2 k -> IS.member k $ refsFW2 rs
-    Renv k -> IS.member k $ refsEnv rs
-    Rphasor k -> IS.member k $ refsPhasor rs
-    Rcos2pi k -> IS.member k $ refsCos2pi rs
-    Rlookup k -> IS.member k $ refsLookup rs
-    Rnoise k -> IS.member k $ refsNoise rs
-    Rdw k -> IS.member k $ refsDW rs
-    Rdtap k -> IS.member k $ refsDTap rs
+refsInsert :: (IsKind k) => Ref s k -> RefSet s -> RefSet s
+refsInsert (Ref tag k) = RefSet . modifyTP tag (IS.insert k) . unRefSet
+{-# INLINE refsInsert #-}
 
-refsFor :: (Monad m) => RefSet s -> (forall k. Ref s k -> m ()) -> m ()
-refsFor rs f = do
-    mapM_ (f . Rarray) . IS.toList $ refsArray rs
-    mapM_ (f . Rp) . IS.toList $ refsP rs
-    mapM_ (f . Rwire) . IS.toList $ refsWire rs
-    mapM_ (f . Rfw1) . IS.toList $ refsFW1 rs
-    mapM_ (f . Rfw2) . IS.toList $ refsFW2 rs
-    mapM_ (f . Renv) . IS.toList $ refsEnv rs
-    mapM_ (f . Rphasor) . IS.toList $ refsPhasor rs
-    mapM_ (f . Rcos2pi) . IS.toList $ refsCos2pi rs
-    mapM_ (f . Rlookup) . IS.toList $ refsLookup rs
-    mapM_ (f . Rnoise) . IS.toList $ refsNoise rs
-    mapM_ (f . Rdw) . IS.toList $ refsDW rs
-    mapM_ (f . Rdtap) . IS.toList $ refsDTap rs
+refsDelete :: (IsKind k) => Ref s k -> RefSet s -> RefSet s
+refsDelete (Ref tag k) = RefSet . modifyTP tag (IS.delete k) . unRefSet
+{-# INLINE refsDelete #-}
+
+refsFor :: (Monad m) => RefSet s -> (forall k. (IsKind k) => Ref s k -> m ()) -> m ()
+refsFor rs f = sequence_ . mapTP (\tag -> mapM_ (f . Ref tag) . IS.toList) $ unRefSet rs
+
+-- }}}
 
 -- }}}
 
@@ -397,7 +396,7 @@ frameDown frm = case frmCount frm of
     1 -> Nothing
     n -> Just $ frm { frmCount = pred n }
 
-frameAdd :: Ref s k -> Frame s -> Frame s
+frameAdd :: (IsKind k) => Ref s k -> Frame s -> Frame s
 frameAdd r frm = frm { frmRefs = refsInsert r $ frmRefs frm }
 
 -- }}}
@@ -415,15 +414,15 @@ ctxInit = Ctx
     , ctxFrames = IM.singleton 0 frameRoot
     }
 
-ctxNew :: Ref s k -> Reg -> Ctx s -> Ctx s
+ctxNew :: (IsKind k) => Ref s k -> Reg -> Ctx s -> Ctx s
 ctxNew ref reg ctx = ctx
     { ctxRefs = refmInsert ref reg $ ctxRefs ctx
     }
 
-ctxKill :: Ref s k -> Ctx s -> Ctx s
+ctxKill :: (IsKind k) => Ref s k -> Ctx s -> Ctx s
 ctxKill r ctx = ctx { ctxRefs = refmDelete r $ ctxRefs ctx }
 
-ctxReg :: Ref s k -> Ctx s -> Reg
+ctxReg :: (IsKind k) => Ref s k -> Ctx s -> Reg
 ctxReg r ctx = case refmLookup r $ ctxRefs ctx of
     Just reg -> reg
     Nothing -> error "ctxReg lookup failed"
@@ -438,7 +437,7 @@ newtype Event s a = Event { unEvent :: StateT (Ctx s) Gen a }
 genE :: Gen a -> Event s a
 genE = Event . lift
 
-newE :: Ref s k -> FRef s -> Event s Reg
+newE :: (IsKind k) => Ref s k -> FRef s -> Event s Reg
 newE ref (FRef n) = Event $ do
     reg <- lift allocReg
     modify $ ctxNew ref reg
@@ -447,14 +446,14 @@ newE ref (FRef n) = Event $ do
         }
     return reg
 
-killE :: Ref s k -> Event s ()
+killE :: (IsKind k) => Ref s k -> Event s ()
 killE r = Event $ do
     reg <- gets $ ctxReg r
     lift . emit $ I_blank reg
     lift $ freeReg reg
     modify $ ctxKill r
 
-regE :: Ref s k -> Event s Reg
+regE :: (IsKind k) => Ref s k -> Event s Reg
 regE = Event . gets . ctxReg
 
 beginE :: FRef s -> FRef s -> Event s ()
@@ -605,19 +604,7 @@ freshRef :: Tag k -> Score s (Ref s k)
 freshRef tag = Score $ \s ->
     let n = scrNext s
         s' = s { scrNext = succ n }
-    in case tag of
-        TagArray -> (Rarray n, s', Stop)
-        TagP -> (Rp n, s', Stop)
-        TagWire -> (Rwire n, s', Stop)
-        TagFW1 -> (Rfw1 n, s', Stop)
-        TagFW2 -> (Rfw2 n, s', Stop)
-        TagEnv -> (Renv n, s', Stop)
-        TagPhasor -> (Rphasor n, s', Stop)
-        TagCos2pi -> (Rcos2pi n, s', Stop)
-        TagLookup -> (Rlookup n, s', Stop)
-        TagNoise -> (Rnoise n, s', Stop)
-        TagDW -> (Rdw n, s', Stop)
-        TagDTap -> (Rdtap n, s', Stop)
+    in (Ref tag n, s', Stop)
 
 freshFRef :: Score s (FRef s)
 freshFRef = Score $ \s ->
