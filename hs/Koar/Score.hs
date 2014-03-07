@@ -12,7 +12,9 @@ module Koar.Score
 
     -- quantities
     , Time(..), sec, msec
+    , scaleTime
     , Freq(..), hz
+    , scaleFreq
 
     -- resource kinds
     , Kind(..)
@@ -65,7 +67,7 @@ import           Data.Ratio
 import           Koar.Patchctl
 -- }}}
 
--- time {{{
+-- internal time {{{
 
 newtype Secs = Secs { unSecs :: Rational }
   deriving (Eq, Ord, Enum, Num, Fractional, Show)
@@ -112,6 +114,10 @@ instance Fractional Time where
     (/) = error "cannot divide quantities of time"
     recip = error "recip is undefined for time"
 
+scaleTime :: Rational -> Time -> Time
+scaleTime a (Time s c) = Time (a * s) (a * c)
+{-# INLINE scaleTime #-}
+
 
 
 data Freq = Freq
@@ -144,6 +150,9 @@ instance Fractional Freq where
 
     (/) = error "cannot divide quantities of frequency"
     recip = error "recip is undefined for frequencies"
+
+scaleFreq :: Rational -> Freq -> Freq
+scaleFreq a (Freq h p) = Freq (a * h) (a * p)
 
 -- }}}
 

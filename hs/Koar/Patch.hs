@@ -188,15 +188,19 @@ envConst r x0 = event $ do
     reg <- regE r
     genE . emit $ I_env_const reg x0
 
-envLin :: Ref s Env -> Double -> Double -> Score s ()
-envLin r x1 t = event $ do
-    reg <- regE r
-    genE . emit $ I_env_lin reg x1 t
+envLin :: Ref s Env -> Double -> Time -> Score s ()
+envLin r x1 t = do
+    p <- toPeriods' t
+    event $ do
+        reg <- regE r
+        genE . emit $ I_env_lin reg x1 p
 
-envXdec :: Ref s Env -> Double -> Double -> Score s ()
-envXdec r xinf tau = event $ do
-    reg <- regE r
-    genE . emit $ I_env_xdec reg xinf tau
+envXdec :: Ref s Env -> Double -> Time -> Score s ()
+envXdec r xinf tau = do
+    p <- toPeriods' tau
+    event $ do
+        reg <- regE r
+        genE . emit $ I_env_xdec reg xinf p
 
 -- }}}
 

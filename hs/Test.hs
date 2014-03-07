@@ -33,13 +33,14 @@ score = scale (sec $ 60 / 163) $ do
     wireMake echo master 1
     dw <- dwriterMake echo (sec 4)
 
-    rec1 <- makeSum
-    wireMake rec1 echo 0.75
-    dtapMake rec1 dw . fromRational $ 2 / 3
+    do -- echo feedback loops
+        rec1 <- makeSum
+        wireMake rec1 echo 0.75
+        dtapMake rec1 dw . fromRational $ 2 / 3
 
-    rec2 <- makeSum
-    wireMake rec2 echo 0.1
-    dtapMake rec2 dw . fromRational $ 1 / 5
+        rec2 <- makeSum
+        wireMake rec2 echo 0.1
+        dtapMake rec2 dw . fromRational $ 1 / 5
 
     wave <- arrayMake 1024 0
     arrayPartial wave 1 1 0
@@ -50,10 +51,10 @@ score = scale (sec $ 60 / 163) $ do
     arrayNormalize wave 1
 
     let basicStep = do
-            shift 0 $ bass master 1 (hz 166) (hz 16) (sec 0.125)
-            shift 1 $ bass master 1 (hz 220) (hz 16) (sec 0.15)
-            shift 2.5 $ bass master 0.7 (hz 166) (hz 16) (sec 0.125)
-            shift 3 $ bass master 1 (hz 220) (hz 16) (sec 0.15)
+            shift 0 $ chirp master 1 (hz 166) (hz 16) (sec 0.125)
+            shift 1 $ chirp master 1 (hz 220) (hz 16) (sec 0.15)
+            shift 2.5 $ chirp master 0.7 (hz 166) (hz 16) (sec 0.125)
+            shift 3 $ chirp master 1 (hz 220) (hz 16) (sec 0.15)
 
     let basicBass = do
             shift 0 $ pluck master wave 0.3 (hz 55) 1
@@ -63,37 +64,25 @@ score = scale (sec $ 60 / 163) $ do
     let basicHihat = forM_ [0 .. 7] $ \i -> do
             shift (fromRational $ i / 2) $ noise master 0.2 0.125
 
-    frame 16 $ do
-        shift 0 $ bass echo 0.5 (hz 440) (hz 880) (msec 50)
-        shift 7 $ bass echo 0.5 (hz 1760) (hz 880) (msec 50)
+    frame 32 $ do
+        shift 0 $ chirp echo 0.5 (hz 440) (hz 880) (msec 50)
+        shift 7 $ chirp echo 0.5 (hz 1760) (hz 880) (msec 50)
+        shift 8 $ chirp echo 0.1 (hz 3520) (hz 880) (msec 150)
+        shift 16 $ chirp echo 0.5 (hz 880) (hz 440) (msec 100)
 
-    {--}
-    frame 16 $ do
-        --shift (Cell 0.5) $ pluck master wave 0.3 (hz 110) (Cell 3)
-        --shift (Cell 1.5) $ pluck master wave 0.3 (hz 220) (Cell 2.5)
-
-        {--
-        shift (Cell 0) $ pluck master wave 0.3 (hz $ 55 * 4 / 3) (Cell 2)
-        shift (Cell 2) $ pluck master wave 0.3 (hz 55) (Cell 2)
-        shift (Cell 3.5) $ pluck master wave 0.3 (hz $ 55 * 7 / 5) (Cell 4)
-        shift (Cell 8) $ pluck master wave 0.3 (hz 55) (Cell 2)
-        shift (Cell 10) $ pluck master wave 0.3 (hz $ 55 * 5 / 4) (Cell 2)
-        shift (Cell 13.5) $ pluck master wave 0.2 (hz $ 55) (Cell 2)
-        --}
-
-        shift 0 $ basicStep >> basicBass >> basicHihat
-        shift 4 $ basicStep >> basicBass
-        shift 8 $ basicStep >> basicBass >> basicHihat
-        shift 12 $ basicStep >> basicBass >> basicHihat
-    --}
+    frame 32 $ do
+        shift 0 $ basicStep -- >> basicBass -- >> basicHihat
+        shift 4 $ basicStep -- >> basicBass
+        shift 8 $ basicStep -- >> basicBass -- >> basicHihat
+        shift 12 $ basicStep -- >> basicBass -- >> basicHihat
+        shift 16 $ basicStep
+        shift 20 $ basicStep
+        shift 24 $ basicStep
+        shift 28 $ basicStep
 
 
-bass :: Ref s P -> Double -> Freq -> Freq -> Time -> Score s ()
-bass out amp f0 f1 dur = frame dur $ do
-    f0' <- toNormFreq' f0
-    f1' <- toNormFreq' f1
-    dur' <- toPeriods' dur
-
+chirp :: Ref s P -> Double -> Freq -> Freq -> Time -> Score s ()
+chirp out amp f0 f1 dur = frame dur $ do
     fc <- makeSum
     pc <- makeSum
     xx <- makeProd
@@ -102,21 +91,16 @@ bass out amp f0 f1 dur = frame dur $ do
     cos2piMake pc xx
     wireMake xx out amp
 
-    fenv <- envMake fc f0'
-    envXdec fenv f1' (dur' / 5)
+    fenv <- envMake fc =<< toNormFreq' f0
+    toNormFreq' f1 >>= \f -> envXdec fenv f $ scaleTime (1/5) dur
 
-    let att = sec 0.0025
-    att' <- toPeriods' att
+    let att = msec 2.5
     aenv <- envMake xx 0
-    envLin aenv 1 att'
-    shift att $ envXdec aenv 0 ((dur' - att') / 5)
+    envLin aenv 1 att
+    shift att . envXdec aenv 0 $ scaleTime (1/5) (dur - att)
 
 pluck :: Ref s P -> Ref s Array -> Double -> Freq -> Time -> Score s ()
 pluck out wave amp f0 dur = frame dur $ do
-    f0' <- toNormFreq' f0
-    warble <- toNormFreq' 6
-    dur' <- toPeriods' dur
-
     fc <- makeSum
     fc' <- makeSum
     pc <- makeSum
@@ -129,16 +113,14 @@ pluck out wave amp f0 dur = frame dur $ do
     cos2piMake pc' xx
     wireMake xx out amp
 
-    fenv <- envMake fc f0'
-    fenv' <- envMake fc' warble
+    fenv <- toNormFreq' f0 >>= envMake fc
+    fenv' <- envMake fc' 6
 
     let att = sec 0.01
     let rel = sec 0.5
-    att' <- toPeriods' att
-    rel' <- toPeriods' rel
     aenv <- envMake xx 0
-    envLin aenv 1 att'
-    shift dur . frame rel $ envXdec aenv 0 (rel' / 5)
+    envLin aenv 1 att
+    shift dur . frame rel $ envXdec aenv 0 $ scaleTime (1/5) rel
 
 noise :: Ref s P -> Double -> Time -> Score s ()
 noise out amp dur = frame dur $ do
