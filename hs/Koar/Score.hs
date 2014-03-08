@@ -49,6 +49,7 @@ module Koar.Score
     , sampleRate
     , toPeriods, toPeriods'
     , toNormFreq, toNormFreq'
+    , timeToFreq, freqToTime
 
     ) where
 -- }}}
@@ -661,6 +662,20 @@ toNormFreq f = Score $ \s -> let
 
 toNormFreq' :: Freq -> Score s Double
 toNormFreq' f = fromRational <$> toNormFreq f
+
+timeToFreq :: Time -> Score s Freq
+timeToFreq t = Score $ \s -> let
+    { h = scrHere s
+    ; dt = unSecs $ hereDT h
+    ; f = recip $ timeSecs t + timeCells t * dt
+    } in (hz f, s, Stop)
+
+freqToTime :: Freq -> Score s Time
+freqToTime f = Score $ \s -> let
+    { h = scrHere s
+    ; dt = unSecs $ hereDT h
+    ; t = recip $ freqHertz f + freqPerCell f / dt
+    } in (sec t, s, Stop)
 
 
 

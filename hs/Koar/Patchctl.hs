@@ -343,7 +343,9 @@ runInstrs endpoint is = runDirectT endpoint $ do
 -- slave {{{
 
 putInstrs :: Handle -> [Instr] -> IO ()
-putInstrs h = LB.hPut h . toLazyByteString . mconcat . map bInstr
+putInstrs h is = forM_ (chunkInstrs 48000 is) $ \cs -> do
+    LB.hPut h . toLazyByteString . mconcat $ map bInstr cs
+    hFlush h
 
 runSlave :: [Instr] -> IO ()
 runSlave is = do
