@@ -357,4 +357,23 @@ END
 
 // }}}
 
+// (104 - 105) vdelays {{{
+
+OPCODE (104, "vdelay/make", vdelay_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "dsig")
+    ARG (A_REG + T_PNODE, "snk")
+    ARG (A_NAT, "len")
+END
+
+OPCODE (105, "vdelay/gains", vdelay_gains)
+    ARG (A_REG + T_VDELAY, "self")
+    ARG (A_DOUBLE, "raw")
+    ARG (A_DOUBLE, "del")
+    ARG (A_DOUBLE, "fb")
+END
+
+// }}}
+
 // vim:fdm=marker:

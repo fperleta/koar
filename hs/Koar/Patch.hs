@@ -328,4 +328,26 @@ dtapAdjust tap t = do
 
 -- }}}
 
+-- vdelay {{{
+
+vdelayMake :: Ref s P -> Ref s P -> Ref s P -> Time -> Score s (Ref s VDelay)
+vdelayMake src dsig snk len = do
+    periods <- floor <$> toPeriods' len
+    r <- freshRef TagVDelay
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regDsig <- regE dsig
+        regSnk <- regE snk
+        genE . emit $ I_vdelay_make reg regSrc regDsig regSnk periods
+    return r
+
+vdelayGains :: Ref s VDelay -> Double -> Double -> Double -> Score s ()
+vdelayGains vd raw del fb = event $ do
+    reg <- regE vd
+    genE . emit $ I_vdelay_gains reg raw del fb
+
+-- }}}
+
 -- vim:fdm=marker:

@@ -77,6 +77,13 @@ extern anode_t N_touch (patch_t, pnode_t);
 
 // }}}
 
+// vdelays {{{
+
+extern anode_t N_vdelay_make (patch_t, pnode_t, pnode_t, pnode_t, size_t);
+extern void N_vdelay_gains (anode_t, samp_t, samp_t, samp_t);
+
+// }}}
+
 // wires {{{
 
 extern anode_t N_wire_make (patch_t, pnode_t, pnode_t, double);

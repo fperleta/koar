@@ -122,6 +122,10 @@ data Instr
     | I_dtap_make Reg Reg Reg Nat
     | I_dtap_adjust Reg Nat
 
+    -- vdelays:
+    | I_vdelay_make Reg Reg Reg Reg Nat
+    | I_vdelay_gains Reg Double Double Double
+
   deriving (Eq, Show)
 
 -- }}}
@@ -203,6 +207,10 @@ bInstr x = case x of
 
     I_dtap_make r snk from offs -> bNat 102 <> bNat r <> bNat snk <> bNat from <> bNat offs
     I_dtap_adjust r offs        -> bNat 103 <> bNat r <> bNat offs
+
+    I_vdelay_make r src dsig snk len
+                                -> bNat 104 <> bNat r <> bNat src <> bNat dsig <> bNat snk <> bNat len
+    I_vdelay_gains r raw del fb  -> bNat 105 <> bNat r <> bDbl raw <> bDbl del <> bDbl fb
 
 -- }}}
 

@@ -173,6 +173,7 @@ data Kind
     | Noise
     | DW
     | DTap
+    | VDelay
 
 -- }}}
 
@@ -191,6 +192,7 @@ data Tag :: Kind -> * where
     TagNoise :: Tag Noise
     TagDW :: Tag DW
     TagDTap :: Tag DTap
+    TagVDelay :: Tag VDelay
 
 -- }}}
 
@@ -209,10 +211,11 @@ data TagProd a = TagProd
     , tpNoise :: a
     , tpDW :: a
     , tpDTap :: a
+    , tpVDelay :: a
     }
 
 diagTP :: a -> TagProd a
-diagTP x = TagProd x x x x x x x x x x x x
+diagTP x = TagProd x x x x x x x x x x x x x
 
 mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
 mapTP f tp =
@@ -228,6 +231,7 @@ mapTP f tp =
     , f TagNoise $ tpNoise tp
     , f TagDW $ tpDW tp
     , f TagDTap $ tpDTap tp
+    , f TagVDelay $ tpVDelay tp
     ]
 
 -- }}}
@@ -306,6 +310,11 @@ instance IsKind DTap where
     kindTag = TagDTap
     getTP _ = tpDTap
     setTP _ x tp = tp { tpDTap = x }
+
+instance IsKind VDelay where
+    kindTag = TagVDelay
+    getTP _ = tpVDelay
+    setTP _ x tp = tp { tpVDelay = x }
 
 -- }}}
 
