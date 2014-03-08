@@ -14,6 +14,7 @@
 #include <argp.h>
 #include <ev.h>
 #include "peers.h"
+#include "patchctl.h"
 #include "patchvm.h"
 #include "defs.h"
 
@@ -169,7 +170,8 @@ init (args_t* args)
         daemon (1, 0);
     }
 
-    //patchctl_endpoint_t ep UNUSED = patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
+    if (!args->slave)
+        patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
 }
 
 static void
