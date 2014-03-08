@@ -195,7 +195,7 @@ struct peer_s {
     struct ev_loop* loop;
     struct sockaddr_storage sa;
     socklen_t sa_len;
-    const char* name;
+    char* name;
     peer_beh_t beh;
     cont_t* conts;
     proto_mid_t mid;
@@ -207,6 +207,14 @@ struct peer_s {
     unsigned dead;
     void* state;
 };
+
+static void
+peer_destroy (peer_t self)
+{
+    if (self->name)
+        free (self->name);
+    free (self);
+}
 
 void*
 peer_get_state (peer_t peer)
@@ -313,6 +321,7 @@ shutdown:
     ev_io_stop (EV_A_ io);
     self->dead = 1;
     self->beh->on_shutdown (self);
+    peer_destroy (self);
 }
 
 static void

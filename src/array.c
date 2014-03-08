@@ -24,6 +24,12 @@ array_create (size_t size)
     arr->size = size;
     arr->xs = xs;
 
+    /* initialize to zero */ {
+        size_t i;
+        for (i = 0; i < size; i++)
+            xs[i] = 0;
+    }
+
     return arr;
 }
 
@@ -37,6 +43,8 @@ array_destroy (array_t arr)
     int res = pthread_mutex_destroy (&(arr->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);
+    if (arr->xs)
+        free (arr->xs);
     free (arr);
 }
 

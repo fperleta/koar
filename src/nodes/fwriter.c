@@ -81,7 +81,8 @@ fwriter2_tick (patch_t p UNUSED, anode_t an, patch_stamp_t now, size_t delta)
     buf_release (bl);
     buf_release (br);
 
-    sf_writef_float (fw->sf, buf, delta);
+    if (fw->sf)
+        sf_writef_float (fw->sf, buf, delta);
 }
 
 static struct ainfo_s

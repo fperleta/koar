@@ -33,17 +33,17 @@ vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len
 
     for (i = 0; i < len; i++)
     {
-        samp_t x = abs (xs[i]);
-        samp_t d = ds[i];
+        samp_t x = xs[i];
+        samp_t d = fabs (ds[i]);
         size_t k = floor (d);
         samp_t p = d - floor (d);
 
         samp_t r = 0;
-        if (unlikely (k > n - 1))
+        if (unlikely (k > n - 2))
             r = 0;
         else
         {
-            hs[(n + hd) % len] = x;
+            hs[(n + hd) % n] = x;
             samp_t r0 = hs[(n + hd - k) % n];
             samp_t r1 = hs[(n + hd - k - 1) % n];
             r = (1 - p) * r0 + p * r1;
@@ -51,7 +51,7 @@ vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len
 
         ys[i] = vd->g_raw * x + vd->g_del * r;
         hs[(n + hd) % n] = x + vd->g_fb * r;
-        hd = (hd + i) % n;
+        hd = (hd + 1) % n;
     }
 
     vd->head = hd;
@@ -60,6 +60,15 @@ vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len
 // }}}
 
 // callbacks {{{
+
+static void
+vdelay_exit (anode_t an)
+{
+    vdelay_t vd = anode_state (an);
+    if (vd->hs)
+        free (vd->hs);
+    vd->hs = NULL;
+}
 
 static void
 vdelay_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
@@ -88,7 +97,7 @@ static struct ainfo_s
 vdelay_ainfo = {
     .name = "vdelay",
     .init = NULL,
-    .exit = NULL,
+    .exit = vdelay_exit,
     .tick = vdelay_tick,
     .ins = 2,
     .outs = 1,

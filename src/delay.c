@@ -41,6 +41,8 @@ delay_destroy (delay_t del)
     int res = pthread_mutex_destroy (&(del->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);
+    if (del->xs)
+        free (del->xs);
     free (del);
 }
 
@@ -67,7 +69,7 @@ delay_release (delay_t del)
     delay_lock (del);
     int last = !(--del->refcount);
     delay_unlock (del);
-    if (!last)
+    if (last)
         delay_destroy (del);
 }
 
