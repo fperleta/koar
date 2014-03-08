@@ -208,7 +208,11 @@ patch_destroy (patch_t p)
 {
     pthread_mutex_lock (&(p->mutex));
     p->shutdown = 1;
+    size_t i, n = p->nworkers;
     pthread_mutex_unlock (&(p->mutex));
+
+    for (i = 0; i < n; i++)
+        pthread_yield ();
 }
 
 void
@@ -378,8 +382,7 @@ anode_destroy (anode_t an)
 
     int res = pthread_mutex_destroy (&(an->mutex));
     if (res)
-        panic ("pthread_mutex_destroy() returned %d", res);
-    free (an);
+        panic ("pthread_mutex_destroy() returned %d", res); free (an);
 }
 
 anode_t
@@ -450,6 +453,7 @@ remove_reader (pnode_t pn, anode_t an)
                 if (--pn->nreaders == 1)
                 {
                     anode_t r = pn->readers[1-i];
+                    free (pn->readers);
                     pn->reader = r;
                     break;
                 }
@@ -557,6 +561,7 @@ pnode_create (patch_t p, pinfo_t info)
     pn->stamp = (unsigned) -1;
     pn->writers = pn->written = pn->nreaders = pn->toread = 0;
     pn->readers = NULL;
+    pn->state = info->neutral;
     pn->patch = p;
 
     return pn;
@@ -568,6 +573,8 @@ pnode_destroy (pnode_t pn)
     int res = pthread_mutex_destroy (&(pn->mutex));
     if (res)
         panic ("pthread_mutex_destroy() returned %d", res);
+    if (pn->nreaders > 1)
+        free (pn->readers);
     free (pn);
 }
 
@@ -644,7 +651,8 @@ check_written (patch_t p, pnode_t pn, patch_stamp_t now)
     pn->toread = pn->nreaders;
     if (!(pn->toread))
     {
-        pn->info->dispose (pn->state);
+        if (pn->info->dispose)
+            pn->info->dispose (pn->state);
         pn->state = pn->info->neutral;
     }
 
@@ -672,6 +680,8 @@ pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
     {
         pn->stamp = now;
         pn->written = 1;
+        if (pn->info->dispose)
+            pn->info->dispose (pn->state);
         pn->state = x;
     }
 
@@ -693,6 +703,8 @@ pnode_dont_write (patch_t p, pnode_t pn, patch_stamp_t now)
     {
         pn->stamp = now;
         pn->written = 1;
+        if (pn->info->dispose)
+            pn->info->dispose (pn->state);
         pn->state = pn->info->neutral;
     }
 

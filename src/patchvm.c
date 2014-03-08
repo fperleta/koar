@@ -547,13 +547,7 @@ patchvm_blank (patchvm_t vm, unsigned reg)
             pnode_release (r.pn);
             break;
 
-        case T_WIRE:
-        case T_FWRITER1:
-        case T_FWRITER2:
-        case T_ENV:
-        case T_PHASOR:
-        case T_COS2PI:
-        case T_LOOKUP:
+        case T_TOUCH ... (NUM_REGTAGS - 1):
             anode_release (r.an);
             break;
 
@@ -683,6 +677,8 @@ patchvm_exec (patchvm_t vm, const uint8_t* buf, size_t len)
         run (vm, instr);
         if (vm->fail)
             goto fail_instr;
+
+        free_instr (instr);
 
         //log_emit (LOG_DETAIL, "done");
 

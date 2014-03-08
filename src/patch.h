@@ -7,6 +7,7 @@
 #ifndef KOAR_PATCH_H
 #define KOAR_PATCH_H
 
+#define _GNU_SOURCE
 #include <pthread.h>
 #include "buf.h"
 #include "defs.h"
