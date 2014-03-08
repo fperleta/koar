@@ -14,7 +14,7 @@
 
 struct patchctl_s {
     patchctl_endpoint_t endpoint;
-    size_t index;
+    size_t index, workers;
     patchctl_state_t state;
 
     patchctl_state_t errstate;
@@ -24,7 +24,7 @@ struct patchctl_s {
     patchvm_t vm;
 };
 
-static void ep_up (patchctl_endpoint_t, patchctl_t);
+static size_t ep_up (patchctl_endpoint_t, patchctl_t);
 static void ep_down (patchctl_endpoint_t, patchctl_t);
 
 static patchctl_t
@@ -32,7 +32,7 @@ patchctl_create (patchctl_endpoint_t ep, size_t index)
 {
     patchctl_t ctl = xmalloc (sizeof (struct patchctl_s));
 
-    ep_up (ep, ctl);
+    ctl->workers = ep_up (ep, ctl);
 
     ctl->endpoint = ep;
     ctl->index = index;
@@ -106,8 +106,7 @@ free_on_patch (peer_t self, proto_msg_t msg)
     free (msg);
 
     ctl->state = PATCHCTL_BOUND;
-#define PATCH_WORKERS 1
-    ctl->vm = patchvm_create (PATCH_WORKERS, 0);
+    ctl->vm = patchvm_create (ctl->workers, 0);
 
     short_reply (self, mid, "okay");
 }
@@ -209,11 +208,12 @@ struct patchctl_endpoint_s {
     listener_t listener;
     struct ev_loop* loop;
     size_t used, limit;
+    size_t workers;
     patchctl_t *ctls;
     size_t next;
 };
 
-static void
+static size_t
 ep_up (patchctl_endpoint_t ep, patchctl_t ctl)
 {
     pthread_mutex_lock (&(ep->mutex));
@@ -222,8 +222,11 @@ ep_up (patchctl_endpoint_t ep, patchctl_t ctl)
         panic ("too many patchctls");
 
     ep->ctls[ep->used++] = ctl;
+    size_t workers = ep->workers;
 
     pthread_mutex_unlock (&(ep->mutex));
+
+    return workers;
 }
 
 static void
@@ -268,7 +271,7 @@ endpoint_beh = {
 };
 
 patchctl_endpoint_t
-patchctl_endpoint_create (struct ev_loop* loop, const char* addr, size_t limit)
+patchctl_endpoint_create (struct ev_loop* loop, const char* addr, size_t limit, size_t workers)
 {
     DEBUGP ("%s", addr);
 
@@ -287,6 +290,7 @@ patchctl_endpoint_create (struct ev_loop* loop, const char* addr, size_t limit)
     ep->listener = listener;
     ep->used = 0;
     ep->limit = limit;
+    ep->workers = workers;
     ep->ctls = xmalloc (sizeof (patchctl_t) * limit);
     ep->next = 1;
 
@@ -315,7 +319,7 @@ patchctl_endpoint_destroy (patchctl_endpoint_t ep)
 
     free (ep);
 
-    log_emit (LOG_DETAIL, "endpoint %p destroyed");
+    log_emit (LOG_DETAIL, "endpoint %p destroyed", ep);
 }
 
 // }}}

@@ -105,6 +105,7 @@ static struct argp_option opts[] = {
         { "quiet", 'q', 0, 0, "Don't print log messages to the standard output.", 0 },
         { "slave", 's', 0, 0, "Run as a slave process, reading patchvm bytecode from stdin.", 0},
         { "verbose", 'v', 0, 0, "Print all log messages. Repeat to enable logging.", 0 },
+        { "workers", 'w', "N", 0, "Set the number of patch worker threads.", 0},
         { 0, 0, 0, 0, 0, 0 }
 };
 
@@ -127,7 +128,7 @@ static const args_t default_args = {
 };
 
 static error_t
-parse_opt (int key, char* arg UNUSED, struct argp_state* state)
+parse_opt (int key, char* arg, struct argp_state* state)
 {
     args_t* a = state->input;
     switch (key)
@@ -145,6 +146,9 @@ parse_opt (int key, char* arg UNUSED, struct argp_state* state)
             a->logging = !!a->verbose;
             a->verbose = 1;
             break;
+        case 'w':
+            a->workers = atoi (arg);
+            break;
         default:
             return ARGP_ERR_UNKNOWN;
     }
@@ -160,6 +164,7 @@ static struct argp argp = {
 
 // }}}
 
+static patchctl_endpoint_t ep = NULL;
 
 static void
 init (args_t* args)
@@ -171,12 +176,18 @@ init (args_t* args)
     }
 
     if (!args->slave)
-        patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8);
+    {
+        ep = patchctl_endpoint_create (EV_DEFAULT, "tcp:20350", 8, args->workers);
+        if (!ep)
+            panic ("unable to create a patchctl endpoint");
+    }
 }
 
 static void
 cleanup (void)
 {
+    if (ep)
+        patchctl_endpoint_destroy (ep);
 }
 
 static void

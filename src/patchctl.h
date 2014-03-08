@@ -16,7 +16,7 @@
 
 typedef struct patchctl_endpoint_s* patchctl_endpoint_t;
 
-extern patchctl_endpoint_t patchctl_endpoint_create (struct ev_loop*, const char*, size_t);
+extern patchctl_endpoint_t patchctl_endpoint_create (struct ev_loop*, const char*, size_t, size_t);
 extern void patchctl_endpoint_destroy (patchctl_endpoint_t);
 
 // }}}
