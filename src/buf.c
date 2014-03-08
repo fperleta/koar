@@ -9,7 +9,7 @@
 bufpool_t
 bufpool_create (void)
 {
-    bufpool_t pool;
+    bufpool_t pool = NULL;
 
     int res = posix_memalign ((void**) &pool, BUFPOOL_BYTES, BUFPOOL_BYTES);
     if (res)
@@ -27,6 +27,13 @@ bufpool_create (void)
     if (res)
         panic ("pthread_mutex_init() returned %d", res);
 
+    log_emit (LOG_DETAIL,
+        "bufpool: ptr=%p, head=%zu, free=%zu, size=%zukB",
+        pool,
+        BUFPOOL_HEAD,
+        pool->free,
+        BUFPOOL_BYTES >> 10u);
+
     return pool;
 }
 
@@ -40,7 +47,11 @@ bufpool_destroy (bufpool_t pool)
 }
 
 buf_t
+#if DEBUG_BUFS
+buf_alloc_ (const char* fn, int ln, bufpool_t pool)
+#else
 buf_alloc (bufpool_t pool)
+#endif
 {
     pthread_mutex_lock (&(pool->mutex));
 
@@ -49,38 +60,66 @@ buf_alloc (bufpool_t pool)
 
     size_t i;
     for (i = BUFPOOL_HEAD; (i < BUFPOOL_TOTAL) && pool->rc[i]; i++);
+    if (i >= BUFPOOL_TOTAL)
+        panic ("bufpool overflow");
     pool->rc[i] = 1;
     pool->free--;
+
+#if DEBUG_BUFS
+    log_emit (LOG_DEBUG, "buf_alloc (%zu) @ %s:%d", i, fn, ln);
+#endif
 
     pthread_mutex_unlock (&(pool->mutex));
     return (buf_t) (((void*) pool) + (i << BUF_BYTES_LOG));
 }
 
-void
+buf_t
+#if DEBUG_BUFS
+buf_acquire_ (const char* fn, int ln, bufpool_t pool)
+#else
 buf_acquire (buf_t b)
+#endif
 {
     bufpool_t pool = bufpool_get (b);
     size_t i = bufpool_index (b);
+
+    //log_emit (LOG_DETAIL, "buf_acquire (%zu)", i);
+    if ((i < BUFPOOL_HEAD) && (i >= BUFPOOL_TOTAL))
+        panic ("invalid bufpool index %zu (ptr = %p)", i, b.p);
 
     pthread_mutex_lock (&(pool->mutex));
     if (pool->rc[i] == 0xFF)
-        panic ("buffer reference overflow");
+        panic ("buffer reference overflow (ptr = %p, index = %zu)", b.p, i);
     pool->rc[i]++;
     pthread_mutex_unlock (&(pool->mutex));
+
+    return b;
 }
 
 void
+#if DEBUG_BUFS
+buf_release_ (const char* fn, int ln, buf_t b)
+#else
 buf_release (buf_t b)
+#endif
 {
     bufpool_t pool = bufpool_get (b);
     size_t i = bufpool_index (b);
+
+    if ((i < BUFPOOL_HEAD) && (i >= BUFPOOL_TOTAL))
+        panic ("invalid bufpool index %zu (ptr = %p)", i, b.p);
 
     pthread_mutex_lock (&(pool->mutex));
     if (!pool->rc[i])
         panic ("buffer reference underflow");
     pool->rc[i]--;
     if (!pool->rc[i])
+    {
+#if DEBUG_BUFS
+        log_emit (LOG_DETAIL, "buf_free (%zu) @ %s:%d", i, fn, ln);
+#endif
         pool->free++;
+    }
     pthread_mutex_unlock (&(pool->mutex));
 }
 

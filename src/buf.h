@@ -11,6 +11,8 @@
 #include <pthread.h>
 #include "defs.h"
 
+#define DEBUG_BUFS 0
+
 // constants {{{
 
 // buffer size
@@ -24,7 +26,7 @@
 // buffer pool size
 #define BUFPOOL_HEAD_LOG 4u // log2 of number of reserved bufs at the beggining of pool
 #define BUFPOOL_HEAD (1u << BUFPOOL_HEAD_LOG)
-#define BUFPOOL_TOTAL_LOG (BUF_BYTES_LOG + BUFPOOL_HEAD_LOG - 1u)
+#define BUFPOOL_TOTAL_LOG (BUF_BYTES_LOG + BUFPOOL_HEAD_LOG - 2u)
 #define BUFPOOL_TOTAL (1u << BUFPOOL_TOTAL_LOG)
 #define BUFPOOL_BYTES_LOG (BUFPOOL_TOTAL_LOG + BUF_BYTES_LOG)
 #define BUFPOOL_BYTES (1u << BUFPOOL_BYTES_LOG)
@@ -70,9 +72,18 @@ bufpool_index (buf_t b)
     return (size_t) (((uintptr_t) b.xs) & BUFPOOL_MASK) >> BUF_BYTES_LOG;
 }
 
+#if DEBUG_BUFS
+extern buf_t buf_alloc_ (const char*, int, bufpool_t); // refcount = 1
+extern buf_t buf_acquire_ (const char*, int, buf_t);
+extern void buf_release_ (const char*, int, buf_t);
+#define buf_alloc(p) (buf_alloc_ (__FILE__, __LINE__, p))
+#define buf_acquire(b) (buf_acquire_ (__FILE__, __LINE__, b))
+#define buf_release(b) (buf_release_ (__FILE__, __LINE__, b))
+#else
 extern buf_t buf_alloc (bufpool_t); // refcount = 1
-extern void buf_acquire (buf_t);
+extern buf_t buf_acquire (buf_t);
 extern void buf_release (buf_t);
+#endif
 
 // }}}
 
