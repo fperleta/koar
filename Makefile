@@ -5,7 +5,7 @@ all:	prepare koar
 
 include config.mk
 
-NODES_OBJS=cos2pi delays env fwriter lookup noise passive phasor touch vdelay wire
+NODES_OBJS=biquad cos2pi delays env fwriter lookup noise passive phasor touch vdelay wire
 KOAR_OBJS=array buf delay main patch patchctl patchvm peers
 
 OBJS=$(addsuffix .o, \

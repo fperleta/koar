@@ -30,6 +30,7 @@ typedef enum {
     T_DWRITER,
     T_DTAP,
     T_VDELAY,
+    T_BIQUAD,
 
     NUM_REGTAGS
 } regtag_t;

@@ -357,7 +357,7 @@ END
 
 // }}}
 
-// (104 - 105) vdelays {{{
+// (104 - 107) vdelays {{{
 
 OPCODE (104, "vdelay/make", vdelay_make)
     ARG (A_ANYREG, "self")
@@ -373,6 +373,36 @@ OPCODE (105, "vdelay/gains", vdelay_gains)
     ARG (A_DOUBLE, "del")
     ARG (A_DOUBLE, "fb")
 END
+
+RESERVED (106)
+RESERVED (107)
+
+// }}}
+
+// (108 - 111) {{{
+
+OPCODE (108, "biquad/make", biquad_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "snk")
+    ARG (A_NAT, "stages")
+END
+
+OPCODE (109, "biquad/gain", biquad_gain)
+    ARG (A_REG + T_BIQUAD, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+OPCODE (110, "biquad/coeffs", biquad_coeffs)
+    ARG (A_REG + T_BIQUAD, "self")
+    ARG (A_NAT, "stage")
+    ARG (A_DOUBLE, "b1")
+    ARG (A_DOUBLE, "b2")
+    ARG (A_DOUBLE, "a1")
+    ARG (A_DOUBLE, "a2")
+END
+
+RESERVED (111)
 
 // }}}
 

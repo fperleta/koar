@@ -350,4 +350,29 @@ vdelayGains vd raw del fb = event $ do
 
 -- }}}
 
+-- biquad {{{
+
+biquadMake :: Ref s P -> Ref s P -> Nat -> Score s (Ref s Biquad)
+biquadMake src snk stages = do
+    r <- freshRef TagBiquad
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regSnk <- regE snk
+        genE . emit $ I_biquad_make reg regSrc regSnk stages
+    return r
+
+biquadGain :: Ref s Biquad -> Double -> Score s ()
+biquadGain bq gain = event $ do
+    reg <- regE bq
+    genE . emit $ I_biquad_gain reg gain
+
+biquadCoeffs :: Ref s Biquad -> Nat -> Double -> Double -> Double -> Double -> Score s ()
+biquadCoeffs bq stage b1 b2 a1 a2 = event $ do
+    reg <- regE bq
+    genE . emit $ I_biquad_coeffs reg stage b1 b2 a1 a2
+
+-- }}}
+
 -- vim:fdm=marker:

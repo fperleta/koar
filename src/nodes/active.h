@@ -12,6 +12,14 @@
 #include "patch.h"
 #include "defs.h"
 
+// biquads {{{
+
+extern anode_t N_biquad_make (patch_t, pnode_t, pnode_t, size_t);
+extern void N_biquad_gain (anode_t, samp_t);
+extern void N_biquad_coeffs (anode_t, size_t, samp_t, samp_t, samp_t, samp_t);
+
+// }}}
+
 // cos2pis {{{
 
 extern anode_t N_cos2pi_make (patch_t, pnode_t, pnode_t);
