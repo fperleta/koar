@@ -4,6 +4,32 @@
  * copyright (c) 2014 Frano Perleta
  */
 
+/*
+ * A `biquad` node implements a cascade of biquad filters with fixed coefficients.
+ * The transfer function is
+ *
+ *      H(z) = g H_1(z) ... H_n(z)
+ *
+ * where `g` is the overall gain, and each `H_i` is of the form
+ *
+ *             1 + b₁/z + b₂/z²
+ *      H(z) = ---------------- .
+ *             1 + a₁/z + a₂/z²
+ *
+ * Each biquad stage is defined by a difference equation:
+ *
+ *      y[n] = x[n] + b₁ x[n-1] + b₁ x[n-2]
+ *                  - a₁ y[n-1] - a₂ y[n-2]
+ *
+ * Transposed Direct Form II is used for numerical robustness:
+ *
+ *      y[n]   =  x[n] + h₁[n-1]
+ *      h₁[n]  =  b₁ x[n] - a₁ y[n] + h₂[n-1]
+ *      h₂[n]  =  b₂ x[n] - a₂ y[n]
+ *
+ * This means that only two state variables (h₁ and h₂) must be maintained.
+ */
+
 #include "buf.h"
 #include "patchvm.h"
 #include "nodes/active.h"
@@ -43,10 +69,11 @@ bq_loop (biquad_t bq, const samp_t* xs, samp_t* ys, size_t len)
         samp_t h1 = s->h1, h2 = s->h2;
         for (i = 0; i < len; i++)
         {
-            samp_t acc = ys[i] - s->a1 * h1 - s->a2 * h2;
-            ys[i] = acc + s->b1 * h1 + s->b2 * h2;
-            h2 = h1;
-            h1 = acc;
+            samp_t x = ys[i];
+            samp_t y = x + h1;
+            h1 = s->b1 * x - s->a1 * y + h2;
+            h2 = s->b2 * x - s->a2 * y;
+            ys[i] = y;
         }
         s->h1 = h1;
         s->h2 = h2;
