@@ -176,7 +176,7 @@ void
 PATCHVM_biquad_gain (patchvm_t vm, instr_t instr)
 {
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
-    samp_t gain = instr->args[0].dbl;
+    samp_t gain = instr->args[1].dbl;
     N_biquad_gain (an, gain);
 }
 

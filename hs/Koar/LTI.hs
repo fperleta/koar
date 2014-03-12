@@ -109,7 +109,7 @@ data RealRat = RR
 instance Monoid RealRat where
     mempty = RR 1 mempty mempty
     mappend (RR s b a) (RR s' b' a') = RR (s * s') (b <> b') (a <> a')
-    mconcat rs = RR (product ss) (mconcat bs) (mconcat bs)
+    mconcat rs = RR (product ss) (mconcat bs) (mconcat as)
       where
         (ss, bs, as) = unzip3 $ map (\(RR s b a) -> (s, b, a)) rs
 
@@ -258,13 +258,13 @@ bilinPoly k (RP rs cs) =
 -- second order sections {{{
 
 type TwoCoeffs = (R, R) -- b1, b2
-type SOS = (TwoCoeffs, TwoCoeffs) -- b, a
+type SOS = (R, R, R, R) -- b1, b2, a1, a2
 
 coeffsConj :: C -> TwoCoeffs
 coeffsConj c = (-2 * realPart c, (magnitude c)^2)
 
 coeffsRealPair :: R -> R -> TwoCoeffs
-coeffsRealPair r1 r2 = (r1 + r2, r1 * r2)
+coeffsRealPair r1 r2 = (negate $ r1 + r2, r1 * r2)
 
 coeffsReal :: R -> TwoCoeffs
 coeffsReal r = (-r, 0)
@@ -279,9 +279,9 @@ coeffsPoly (RP rs cs) = go rs
 dfToSOS :: DF -> (R, [SOS])
 dfToSOS (DF (RR s b a)) = (s, go (coeffsPoly b) (coeffsPoly a))
   where
-    go [] as = map ((,) (0, 0)) as
-    go bs [] = map (flip (,) (0, 0)) bs
-    go (a:as) (b:bs) = (a, b) : go as bs
+    go [] as = map (\(a1, a2) -> (0, 0, a1, a2)) as
+    go bs [] = map (\(b1, b2) -> (b1, b2, 0, 0)) bs
+    go ((b1, b2):bs) ((a1, a2):as) = (b1, b2, a1, a2) : go bs as
 
 -- }}}
 
