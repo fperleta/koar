@@ -8,6 +8,7 @@ module Test
 -- }}}
 
 -- imports {{{
+import           Koar.Equalizer
 import           Koar.Patch
 import           Koar.Patchctl (runInstrs)
 import           Koar.Score
@@ -26,8 +27,14 @@ score = scale (sec $ 60 / 163) $ do
 
     master <- makeSum
     touch master
-    wireMake master outL 1
-    wireMake master outR 1
+
+
+    final <- makeSum
+    eqMake master final
+        [ ButterLP (hz 2000) 1 4
+        ]
+    wireMake final outL 1
+    wireMake final outR 1
 
     echo <- makeSum
     wireMake echo master 0.5

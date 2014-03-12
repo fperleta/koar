@@ -22,4 +22,14 @@ type C = Complex R
 
 -- }}}
 
+-- decibels {{{
+
+dB :: R -> R
+dB db = 10 ** (db / 20)
+
+dBn :: R -> R
+dBn = dB . negate
+
+-- }}}
+
 -- vim:fdm=marker:
