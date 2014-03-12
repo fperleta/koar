@@ -12,6 +12,7 @@ module Koar.Common
 -- import           X (Y)
 import           Data.Complex
 import           Data.Word
+import           Text.Printf
 -- }}}
 
 -- types {{{
@@ -29,6 +30,9 @@ dB db = 10 ** (db / 20)
 
 dBn :: R -> R
 dBn = dB . negate
+
+dBshow :: R -> String
+dBshow x = printf "%.2fdB" $ 20 * logBase 10 x
 
 -- }}}
 

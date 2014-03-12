@@ -8,6 +8,7 @@ module Test
 -- }}}
 
 -- imports {{{
+import           Koar.Common
 import           Koar.Equalizer
 import           Koar.Patch
 import           Koar.Patchctl (runInstrs)
@@ -31,7 +32,10 @@ score = scale (sec $ 60 / 163) $ do
 
     final <- makeSum
     eqMake master final
-        [ ButterLP (hz 2000) 1 4
+        [ BlockDC 0.999999
+        , LowShelf (hz 20) (dBn 3)
+        , HighShelf (hz 7800) (dB 24)
+        , ButterLP (hz 8000) 1 10
         ]
     wireMake final outL 1
     wireMake final outR 1
@@ -105,7 +109,8 @@ score = scale (sec $ 60 / 163) $ do
             shift 3 $ chirp master 0.7 (hz 166) (hz 16) (sec 0.125)
 
     let fillStep = do
-            shift 0.5 $ chirp master 0.5 (hz 166) (hz 16) (msec 125)
+            shift 0.5 $ chirp master 0.3 (hz 166) (hz 16) (msec 120)
+            shift 3.5 $ chirp master 0.3 (hz 166) (hz 16) (msec 120)
 
 
     let basicBass = do
@@ -131,7 +136,8 @@ score = scale (sec $ 60 / 163) $ do
         shift 8 $ basicStep -- >> basicBass -- >> basicHihat
         shift 12 $ otherStep -- >> basicBass -- >> basicHihat
         shift 16 $ chirp echo 0.5 (hz 220) (hz 16) (sec 0.15)
-        shift 18 $ chirp echo 0.2 (hz $ 1 * 880) (hz 16) (sec 0.15)
+        --shift 18 $ chirp echo 0.2 (hz $ 1 * 880) (hz 16) (sec 0.15)
+        shift 18 $ snare echo 0.2 (hz $ 2 * 880) (hz 16) (sec 0.15)
         shift 24 $ basicStep >> fillStep
         shift 28 $ otherStep
     --}

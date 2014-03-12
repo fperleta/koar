@@ -25,7 +25,10 @@ data Equalizer s = Equalizer
 
 data EqStage
     = PureGain R
+    | BlockDC R
     | ButterLP Freq R Nat
+    | LowShelf Freq R
+    | HighShelf Freq R
 
 -- }}}
 
@@ -42,9 +45,16 @@ eqMake src snk ss = do
     return $ Equalizer bq nstages
   where
     go (PureGain g) = return $ dfGain g
+    go (BlockDC r) = return $ dfBlockDC r
     go (ButterLP f g n) = do
         f' <- toNormFreq' f
         return $ dfButterLP f' g n
+    go (LowShelf f g) = do
+        f' <- toNormFreq' f
+        return $ dfLowShelf f' g
+    go (HighShelf f g) = do
+        f' <- toNormFreq' f
+        return $ dfHighShelf f' g
 
 -- }}}
 

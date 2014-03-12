@@ -9,10 +9,15 @@ module Koar.LTI
     , AF()
     , afGain
     , afButterLP
+    , afLowShelf
+    , afHighShelf
 
     , DF ()
     , dfGain
+    , dfBlockDC
     , dfButterLP
+    , dfLowShelf
+    , dfHighShelf
 
     , dfToSOS
 
@@ -167,6 +172,16 @@ afButterLP wc g n
 
 -- }}}
 
+-- shelves {{{
+
+afLowShelf :: R -> R -> AF
+afLowShelf w g = AF $ RR 1 (RP [-w * g] []) (RP [-w] [])
+
+afHighShelf :: R -> R -> AF
+afHighShelf w g = AF $ RR g (RP [-w/g] []) (RP [-w] [])
+
+-- }}}
+
 -- }}}
 
 -- digital filters {{{
@@ -186,6 +201,13 @@ instance Monoid DF where
 
 dfGain :: R -> DF
 dfGain g = DF $ RR g mempty mempty
+
+-- }}}
+
+-- DC blocker {{{
+
+dfBlockDC :: R -> DF
+dfBlockDC r = DF $ RR 1 (RP [1] []) (RP [r] [])
 
 -- }}}
 
@@ -212,9 +234,29 @@ testButterLP fc n = mapM_ line $
     tmag f = recip . sqrt $ 1 + (f/fc)^(2*n)
     rmag f = magnitude . rrEval tf . mkPolar 1 $ 2 * pi * f
     line (s, t, r) = putStrLn $ concat
-        [ s, ": theoretical = ", show (20 * logBase 10 t)
-        , "dB; real = ", show (20 * logBase 10 r), "dB"
+        [ s, ": theoretical = ", dBshow t
+        , "dB; real = ", dBshow r
         ]
+
+-- }}}
+
+-- shelves {{{
+
+dfLowShelf :: R -> R -> DF
+dfLowShelf f g = dfGain (g/dc) <> df
+  where
+    df = bilinear c $ afLowShelf (2*pif) g
+    pif = pi * f
+    c = 2 * pif / tan pif
+    dc = magnitude $ rrEval (unDF df) 1
+
+dfHighShelf :: R -> R -> DF
+dfHighShelf f g = dfGain (1/g0) <> df
+  where
+    df = bilinear c $ afHighShelf (2*pif) g
+    pif = pi * f
+    c = 2 * pif / tan pif
+    g0 = magnitude $ rrEval (unDF df) 1
 
 -- }}}
 
@@ -294,13 +336,14 @@ logScale i n c s = c * 2 ** (log s * (2 * k - 1) / log 2)
     k = fromIntegral i / fromIntegral n
 
 plotMags :: Int -> [R] -> IO ()
-plotMags cols mags = do
+plotMags cols logmags = do
     putStrLn $ "bottom: " ++ show bottom ++ "dB; top: " ++ show top ++ "dB"
-    mapM_ (putStrLn . row) mags
+    mapM_ (putStrLn . row) dbs
   where
-    top = maximum mags
-    bottom = minimum $ top : filter (> -90) mags
-    range = top - bottom
+    dbs = map ((*) $ 20 / log 10) logmags
+    top = maximum dbs
+    bottom = minimum $ -90 : filter (not . isInfinite) dbs
+    range = max 1 $ top - bottom
     step = range / fromIntegral cols
     row m
         | m - bottom < step/2 = ""
@@ -309,18 +352,16 @@ plotMags cols mags = do
 
 plotAF :: Int -> Int -> R -> R -> AF -> IO ()
 plotAF rows cols wc s (AF tf) = plotMags cols
-    [ 10 * rrLogMag tf c / log 10
+    [ rrLogMag tf $ 0 :+ w
     | i <- [0 .. rows - 1]
     , let w = logScale i (rows - 1) wc s
-    , let c = 0 :+ w
     ]
 
 plotDF :: Int -> Int -> R -> DF -> IO ()
 plotDF rows cols fc (DF tf) = plotMags cols
-        [ 10 * rrLogMag tf r / log 10
+        [ rrLogMag tf $ cos th :+ sin th
         | i <- [0 .. rows - 1]
         , let th = logScale i rows fc (1/fc)
-        , let r = cos th :+ sin th
         ]
 
 -- }}}
