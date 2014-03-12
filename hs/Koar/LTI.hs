@@ -342,7 +342,7 @@ plotMags cols logmags = do
   where
     dbs = map ((*) $ 20 / log 10) logmags
     top = maximum dbs
-    bottom = minimum $ -90 : filter (not . isInfinite) dbs
+    bottom = max (-90) . minimum $ filter (not . isInfinite) dbs
     range = max 1 $ top - bottom
     step = range / fromIntegral cols
     row m
