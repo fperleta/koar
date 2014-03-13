@@ -11,6 +11,7 @@ module Koar.LTI
     , afButterLP
     , afLowShelf
     , afHighShelf
+    , afPeaking
 
     , DF ()
     , dfGain
@@ -18,6 +19,7 @@ module Koar.LTI
     , dfButterLP
     , dfLowShelf
     , dfHighShelf
+    , dfPeaking
 
     , dfToSOS
 
@@ -53,15 +55,15 @@ instance Monoid RealPoly where
 
 
 
-rpLinear :: R -> R -> RealPoly
-rpLinear a b = RP [-b / a] []
+rpLinear :: R -> RealPoly
+rpLinear b = RP [-b] []
 
-rpQuadratic :: R -> R -> R -> RealPoly
-rpQuadratic a b c
-    | d >= 0 = RP [(-b + rd) / (2*a), (-b - rd) / (2*a)] []
-    | otherwise = RP [] [(-b / (2*a)) :+ (sqrt (-d) / (2*a))]
+rpQuadratic :: R -> R -> RealPoly
+rpQuadratic b c
+    | d >= 0 = RP [(-b + rd)/2, (-b - rd)/2] []
+    | otherwise = RP [] [(-b / 2) :+ (sqrt (-d) / 2)]
   where
-    d = b^2 - 4*a*c
+    d = b^2 - 4*c
     rd = sqrt d
 
 
@@ -149,6 +151,9 @@ instance Monoid AF where
     {-# INLINE mappend #-}
     {-# INLINE mconcat #-}
 
+magAF :: AF -> R -> R
+magAF (AF tf) w = magnitude . rrEval tf $ 0 :+ w
+
 -- pure gain {{{
 
 afGain :: R -> AF
@@ -182,6 +187,13 @@ afHighShelf w g = AF $ RR g (RP [-w/g] []) (RP [-w] [])
 
 -- }}}
 
+-- peaking {{{
+
+afPeaking :: R -> R -> AF
+afPeaking g q = AF $ RR 1 (rpQuadratic (g/q) 1) (rpQuadratic (1/q) 1)
+
+-- }}}
+
 -- }}}
 
 -- digital filters {{{
@@ -196,6 +208,9 @@ instance Monoid DF where
     {-# INLINE mempty #-}
     {-# INLINE mappend #-}
     {-# INLINE mconcat #-}
+
+magDF :: DF -> R -> R
+magDF (DF tf) f = magnitude . rrEval tf . mkPolar 1 $ 2 * pi * f
 
 -- pure gain {{{
 
@@ -251,12 +266,25 @@ dfLowShelf f g = dfGain (g/dc) <> df
     dc = magnitude $ rrEval (unDF df) 1
 
 dfHighShelf :: R -> R -> DF
-dfHighShelf f g = dfGain (1/g0) <> df
+dfHighShelf f g = dfGain (g/g0) <> df
   where
     df = bilinear c $ afHighShelf (2*pif) g
     pif = pi * f
     c = 2 * pif / tan pif
-    g0 = magnitude $ rrEval (unDF df) 1
+    g0 = magnitude $ rrEval (unDF df) (-1)
+
+-- }}}
+
+-- peaking {{{
+
+dfPeaking :: R -> R -> R -> DF
+dfPeaking f g q = dfGain (1/g0) <> df
+  where
+    df = bilinear c $ afPeaking g q
+    pif = pi * f
+    c = recip $ tan pif
+    mag = magnitude . rrEval (unDF df)
+    g0 = min (mag 1) (mag (-1))
 
 -- }}}
 
@@ -361,7 +389,7 @@ plotDF :: Int -> Int -> R -> DF -> IO ()
 plotDF rows cols fc (DF tf) = plotMags cols
         [ rrLogMag tf $ cos th :+ sin th
         | i <- [0 .. rows - 1]
-        , let th = logScale i rows fc (1/fc)
+        , let th = logScale i (rows - 1) fc (1/fc)
         ]
 
 -- }}}

@@ -36,6 +36,7 @@ score = scale (sec $ 60 / 163) $ do
         , LowShelf (hz 20) (dBn 3)
         , HighShelf (hz 7800) (dB 24)
         , ButterLP (hz 8000) 1 10
+        , Peaking (hz 6000) (dB 6) 8
         ]
     wireMake final outL 1
     wireMake final outR 1

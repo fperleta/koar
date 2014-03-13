@@ -29,6 +29,7 @@ data EqStage
     | ButterLP Freq R Nat
     | LowShelf Freq R
     | HighShelf Freq R
+    | Peaking Freq R R
 
 -- }}}
 
@@ -55,6 +56,9 @@ eqMake src snk ss = do
     go (HighShelf f g) = do
         f' <- toNormFreq' f
         return $ dfHighShelf f' g
+    go (Peaking f g q) = do
+        f' <- toNormFreq' f
+        return $ dfPeaking f' g q
 
 -- }}}
 
