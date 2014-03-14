@@ -207,6 +207,7 @@ END
 OPCODE (76, "fwriter1/make", fwriter1_make)
     ARG (A_ANYREG, "self")
     ARG (A_UTF8, "filepath")
+    ARG (A_NAT, "samplerate")
     ARG (A_REG + T_PNODE, "src")
 END
 
@@ -217,6 +218,7 @@ END
 OPCODE (78, "fwriter2/make", fwriter2_make)
     ARG (A_ANYREG, "self")
     ARG (A_UTF8, "filepath")
+    ARG (A_NAT, "samplerate")
     ARG (A_REG + T_PNODE, "left")
     ARG (A_REG + T_PNODE, "right")
 END

@@ -50,8 +50,8 @@ extern void N_env_xdec (anode_t, samp_t, double);
 
 // fwriters {{{
 
-extern anode_t N_fwriter1_make (patch_t, const char*, pnode_t);
-extern anode_t N_fwriter2_make (patch_t, const char*, pnode_t, pnode_t);
+extern anode_t N_fwriter1_make (patch_t, const char*, size_t, pnode_t);
+extern anode_t N_fwriter2_make (patch_t, const char*, size_t, pnode_t, pnode_t);
 extern void N_fwriter_close (patch_t, anode_t);
 
 // }}}

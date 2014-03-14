@@ -87,9 +87,9 @@ data Instr
     | I_wire_scale Reg Double
 
     -- file writers:
-    | I_fwriter1_make Reg String Reg
+    | I_fwriter1_make Reg String Nat Reg
     | I_fwriter1_close Reg
-    | I_fwriter2_make Reg String Reg Reg
+    | I_fwriter2_make Reg String Nat Reg Reg
     | I_fwriter2_close Reg
 
     -- envelope generators:
@@ -185,9 +185,10 @@ bInstr x = case x of
     I_wire_make r i o s         -> bNat 74 <> bNat r <> bNat i <> bNat o <> bDbl s
     I_wire_scale r s            -> bNat 75 <> bNat r <> bDbl s
 
-    I_fwriter1_make r fn i      -> bNat 76 <> bNat r <> bStr fn <> bNat i
+    I_fwriter1_make r fn sr i   -> bNat 76 <> bNat r <> bStr fn <> bNat sr <> bNat i
     I_fwriter1_close r          -> bNat 77 <> bNat r
-    I_fwriter2_make r fn il ir  -> bNat 78 <> bNat r <> bStr fn <> bNat il <> bNat ir
+    I_fwriter2_make r fn sr il ir
+                                -> bNat 78 <> bNat r <> bStr fn <> bNat sr <> bNat il <> bNat ir
     I_fwriter2_close r          -> bNat 79 <> bNat r
 
     I_env_make r out x0         -> bNat 80 <> bNat r <> bNat out <> bDbl x0

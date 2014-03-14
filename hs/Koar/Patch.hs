@@ -142,10 +142,11 @@ fwriter1Make :: FilePath -> Ref s P -> Score s (Ref s FW1)
 fwriter1Make fn i = do
     r <- freshRef TagFW1
     fr <- here
+    sr <- fromIntegral <$> sampleRate
     event $ do
         reg <- newE r fr
         regI <- regE i
-        genE . emit $ I_fwriter1_make reg fn regI
+        genE . emit $ I_fwriter1_make reg fn sr regI
     return r
 
 fwriter1Close :: Ref s FW1 -> Score s ()
@@ -157,11 +158,12 @@ fwriter2Make :: FilePath -> Ref s P -> Ref s P -> Score s (Ref s FW2)
 fwriter2Make fn il ir = do
     r <- freshRef TagFW2
     fr <- here
+    sr <- fromIntegral <$> sampleRate
     event $ do
         reg <- newE r fr
         regL <- regE il
         regR <- regE ir
-        genE . emit $ I_fwriter2_make reg fn regL regR
+        genE . emit $ I_fwriter2_make reg fn sr regL regR
     return r
 
 fwriter2Close :: Ref s FW2 -> Score s ()
