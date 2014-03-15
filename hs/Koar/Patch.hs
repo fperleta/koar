@@ -390,6 +390,22 @@ blitMake freq snk = do
         genE . emit $ I_blit_make reg regFreq regSnk
     return r
 
+blitGain :: Ref s Blit -> Double -> Score s ()
+blitGain blit g = event $ do
+    reg <- regE blit
+    genE . emit $ I_blit_gain reg g
+
+blitJump :: Ref s Blit -> Double -> Score s ()
+blitJump blit phase = event $ do
+    reg <- regE blit
+    genE . emit $ I_blit_jump reg phase
+
+blitUnipolar :: Ref s Blit -> Score s ()
+blitUnipolar blit = event $ genE . emit . I_blit_unipolar =<< regE blit
+
+blitBipolar :: Ref s Blit -> Score s ()
+blitBipolar blit = event $ genE . emit . I_blit_bipolar =<< regE blit
+
 -- }}}
 
 -- vim:fdm=marker:

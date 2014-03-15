@@ -408,7 +408,7 @@ RESERVED (111)
 
 // }}}
 
-// (112 - 113) blits {{{
+// (112 - 117) blits {{{
 
 OPCODE (112, "blit/make", blit_make)
     ARG (A_ANYREG, "self")
@@ -416,7 +416,25 @@ OPCODE (112, "blit/make", blit_make)
     ARG (A_REG + T_PNODE, "snk")
 END
 
-RESERVED (113)
+OPCODE (113, "blit/gain", blit_gain)
+    ARG (A_REG + T_BLIT, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+OPCODE (114, "blit/jump", blit_gain)
+    ARG (A_REG + T_BLIT, "self")
+    ARG (A_DOUBLE, "phase")
+END
+
+OPCODE (115, "blit/unipolar", blit_unipolar)
+    ARG (A_REG + T_BLIT, "self")
+END
+
+OPCODE (116, "blit/bipolar", blit_bipolar)
+    ARG (A_REG + T_BLIT, "self")
+END
+
+RESERVED (117)
 
 // }}}
 

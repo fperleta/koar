@@ -13,15 +13,20 @@
 typedef struct blit_s* blit_t;
 
 struct blit_s {
+    enum {
+        UNIPOLAR = 0,
+        BIPOLAR
+    } mode;
+    samp_t gain;
     samp_t phase;
 };
 
 // }}}
 
-// processing loop {{{
+// processing loops {{{
 
 static void __attribute__ ((hot))
-blit_loop (blit_t blit, const samp_t* fs, samp_t* ys, size_t len)
+blit_loop_up (blit_t blit, const samp_t* fs, samp_t* ys, size_t len)
 {
     size_t i;
 
@@ -38,8 +43,33 @@ blit_loop (blit_t blit, const samp_t* fs, samp_t* ys, size_t len)
         else
             y = sin (m * ph * M_PI) / (m * sin (ph * M_PI));
 
-        ys[i] = y;
+        ys[i] = blit->gain * y;
         ph += f;
+        ph -= floor (ph);
+    }
+    blit->phase = ph;
+}
+
+static void __attribute__ ((hot))
+blit_loop_bp (blit_t blit, const samp_t* fs, samp_t* ys, size_t len)
+{
+    size_t i;
+
+    samp_t ph = blit->phase;
+    for (i = 0; i < len; i++)
+    {
+        samp_t f = fs[i];
+
+        samp_t m = 2 * floor (0.5 / f);
+
+        samp_t y;
+        if (unlikely (ph < 0.0001))
+            y = cos (m * ph * 2 * M_PI) / cos (ph * 2 * M_PI);
+        else
+            y = sin (m * ph * 2 * M_PI) / (m * sin (ph * 2 * M_PI));
+
+        ys[i] = blit->gain * y;
+        ph += 0.5 * f;
         ph -= floor (ph);
     }
     blit->phase = ph;
@@ -59,7 +89,17 @@ blit_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
 
     buf_t b = buf_alloc (p->bufpool);
 
-    blit_loop (blit, f.xs, b.xs, delta);
+    switch (blit->mode)
+    {
+        case UNIPOLAR:
+            blit_loop_up (blit, f.xs, b.xs, delta);
+            break;
+        case BIPOLAR:
+            blit_loop_bp (blit, f.xs, b.xs, delta);
+            break;
+        default:
+            panic ("this should never happen");
+    }
 
     buf_release (f);
 
@@ -91,6 +131,8 @@ N_blit_make (patch_t p, pnode_t freq, pnode_t snk)
     anode_sink (an, 0, snk);
 
     blit_t blit = anode_state (an);
+    blit->mode = UNIPOLAR;
+    blit->gain = 1;
     blit->phase = 0;
 
     return an;
@@ -104,6 +146,80 @@ PATCHVM_blit_make (patchvm_t vm, instr_t instr)
     pnode_t snk = patchvm_get (vm, instr->args[2].reg).pn;
     reg_t val = { .tag = T_BLIT, .an = N_blit_make (p, freq, snk) };
     patchvm_set (vm, instr->args[0].reg, val);
+}
+
+// }}}
+
+// gain {{{
+
+void
+N_blit_gain (anode_t an, samp_t gain)
+{
+    blit_t blit = anode_state (an);
+    blit->gain = gain;
+}
+
+void
+PATCHVM_blit_gain (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    samp_t gain = instr->args[1].dbl;
+    N_blit_gain (an, gain);
+}
+
+// }}}
+
+// jump {{{
+
+void
+N_blit_jump (anode_t an, samp_t phase)
+{
+    blit_t blit = anode_state (an);
+    blit->phase = phase - floor (phase);
+}
+
+void
+PATCHVM_blit_jump (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    samp_t phase = instr->args[1].dbl;
+    N_blit_jump (an, phase);
+}
+
+// }}}
+
+// unipolar {{{
+
+void
+N_blit_unipolar (anode_t an)
+{
+    blit_t blit = anode_state (an);
+    blit->mode = UNIPOLAR;
+}
+
+void
+PATCHVM_blit_unipolar (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    N_blit_unipolar (an);
+}
+
+// }}}
+
+// bipolar {{{
+
+void
+N_blit_bipolar (anode_t an)
+{
+    blit_t blit = anode_state (an);
+    blit->mode = BIPOLAR;
+}
+
+void
+PATCHVM_blit_bipolar (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    N_blit_bipolar (an);
 }
 
 // }}}

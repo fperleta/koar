@@ -42,7 +42,8 @@ score = scale (sec $ 60 / 163) $ do
 
     shift 32 . frame 16 $ do
         freq <- makeSum
-        blitMake freq master
+        blit <- blitMake freq final
+        blitBipolar blit
 
         fenv <- envMake freq =<< toNormFreq' (hz 1)
         envLin fenv 0.001 4

@@ -23,6 +23,10 @@ extern void N_biquad_coeffs (anode_t, size_t, samp_t, samp_t, samp_t, samp_t);
 // blits {{{
 
 extern anode_t N_blit_make (patch_t, pnode_t, pnode_t);
+extern void N_blit_gain (anode_t, samp_t);
+extern void N_blit_jump (anode_t, samp_t);
+extern void N_blit_unipolar (anode_t);
+extern void N_blit_bipolar (anode_t);
 
 // }}}
 

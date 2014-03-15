@@ -133,6 +133,10 @@ data Instr
 
     -- blits:
     | I_blit_make Reg Reg Reg
+    | I_blit_gain Reg Double
+    | I_blit_jump Reg Double
+    | I_blit_unipolar Reg
+    | I_blit_bipolar Reg
 
   deriving (Eq, Show)
 
@@ -227,6 +231,10 @@ bInstr x = case x of
                                 -> bNat 110 <> bNat r <> bNat i <> bDbl b1 <> bDbl b2 <> bDbl a1 <> bDbl a2
 
     I_blit_make r freq snk      -> bNat 112 <> bNat r <> bNat freq <> bNat snk
+    I_blit_gain r gain          -> bNat 113 <> bNat r <> bDbl gain
+    I_blit_jump r phase         -> bNat 114 <> bNat r <> bDbl phase
+    I_blit_unipolar r           -> bNat 115 <> bNat r
+    I_blit_bipolar r            -> bNat 116 <> bNat r
 
 -- }}}
 
