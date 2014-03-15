@@ -381,7 +381,7 @@ RESERVED (107)
 
 // }}}
 
-// (108 - 111) {{{
+// (108 - 111) biquads {{{
 
 OPCODE (108, "biquad/make", biquad_make)
     ARG (A_ANYREG, "self")
@@ -405,6 +405,18 @@ OPCODE (110, "biquad/coeffs", biquad_coeffs)
 END
 
 RESERVED (111)
+
+// }}}
+
+// (112 - 113) blits {{{
+
+OPCODE (112, "blit/make", blit_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "freq")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+RESERVED (113)
 
 // }}}
 

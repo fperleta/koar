@@ -131,6 +131,9 @@ data Instr
     | I_biquad_gain Reg Double
     | I_biquad_coeffs Reg Nat Double Double Double Double
 
+    -- blits:
+    | I_blit_make Reg Reg Reg
+
   deriving (Eq, Show)
 
 -- }}}
@@ -222,6 +225,8 @@ bInstr x = case x of
     I_biquad_gain r gain        -> bNat 109 <> bNat r <> bDbl gain
     I_biquad_coeffs r i b1 b2 a1 a2
                                 -> bNat 110 <> bNat r <> bNat i <> bDbl b1 <> bDbl b2 <> bDbl a1 <> bDbl a2
+
+    I_blit_make r freq snk      -> bNat 112 <> bNat r <> bNat freq <> bNat snk
 
 -- }}}
 

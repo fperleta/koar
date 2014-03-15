@@ -29,7 +29,6 @@ score = scale (sec $ 60 / 163) $ do
     master <- makeSum
     touch master
 
-
     final <- makeSum
     eqMake master final
         [ BlockDC 0.999999
@@ -40,6 +39,15 @@ score = scale (sec $ 60 / 163) $ do
         ]
     wireMake final outL 1
     wireMake final outR 1
+
+    shift 32 . frame 16 $ do
+        freq <- makeSum
+        blitMake freq master
+
+        fenv <- envMake freq =<< toNormFreq' (hz 1)
+        envLin fenv 0.001 4
+        shift 4 $ envXdec fenv 0 4
+        shift 8 $ envLin fenv 0.1 8
 
     echo <- makeSum
     wireMake echo master 0.5

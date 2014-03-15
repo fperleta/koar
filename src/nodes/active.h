@@ -20,6 +20,12 @@ extern void N_biquad_coeffs (anode_t, size_t, samp_t, samp_t, samp_t, samp_t);
 
 // }}}
 
+// blits {{{
+
+extern anode_t N_blit_make (patch_t, pnode_t, pnode_t);
+
+// }}}
+
 // cos2pis {{{
 
 extern anode_t N_cos2pi_make (patch_t, pnode_t, pnode_t);

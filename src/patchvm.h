@@ -31,6 +31,7 @@ typedef enum {
     T_DTAP,
     T_VDELAY,
     T_BIQUAD,
+    T_BLIT,
 
     NUM_REGTAGS
 } regtag_t;

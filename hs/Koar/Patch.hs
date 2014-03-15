@@ -377,4 +377,19 @@ biquadCoeffs bq stage b1 b2 a1 a2 = event $ do
 
 -- }}}
 
+-- blit {{{
+
+blitMake :: Ref s P -> Ref s P -> Score s (Ref s Blit)
+blitMake freq snk = do
+    r <- freshRef TagBlit
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regFreq <- regE freq
+        regSnk <- regE snk
+        genE . emit $ I_blit_make reg regFreq regSnk
+    return r
+
+-- }}}
+
 -- vim:fdm=marker:
