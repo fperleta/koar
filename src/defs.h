@@ -18,6 +18,9 @@
 #define UNUSED __attribute__((unused))
 #define MACRO static inline __attribute__((always_inline, unused))
 
+#define likely(x) (__builtin_expect (!!(x), 1))
+#define unlikely(x) (__builtin_expect (!!(x), 0))
+
 typedef enum {
     LOG_ERROR = 0,
     LOG_NORMAL,

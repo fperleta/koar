@@ -22,9 +22,6 @@ struct vdelay_s {
 
 // processing loop {{{
 
-#define likely(x) (__builtin_expect (!!(x), 1))
-#define unlikely(x) (__builtin_expect (!!(x), 0))
-
 static void __attribute__ ((hot))
 vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len)
 {
