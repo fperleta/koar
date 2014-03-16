@@ -29,6 +29,7 @@ module Koar.LTI
 -- imports {{{
 import           Data.Complex
 import           Data.Monoid
+import           Graphics.EasyPlot
 
 import           Koar.Common
 -- }}}
@@ -390,6 +391,24 @@ plotDF rows cols fc (DF tf) = plotMags cols
         [ rrLogMag tf $ cos th :+ sin th
         | i <- [0 .. rows - 1]
         , let th = logScale i (rows - 1) fc (1/fc)
+        ]
+
+plotRR :: RealRat -> IO Bool
+plotRR tf = plot' [Interactive] X11
+    [ Data3D [Style Lines, Color Red] [] ps
+    | ps <- circles
+    ]
+  where
+    db = max (-90) . (*) 20 . logBase 10 . magnitude . rrEval tf
+    mag :: R -> R -> R
+    mag a b = db (a :+ b)
+    circles =
+        [ [ (realPart z, imagPart z, db z)
+          | i <- [0 .. 1000 * r]
+          , let theta = i / (1000 * r)
+          , let z = mkPolar r (theta * 2 * pi)
+          ]
+        | r <- [0.1, 0.2 .. 1]
         ]
 
 -- }}}
