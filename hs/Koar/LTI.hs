@@ -27,8 +27,11 @@ module Koar.LTI
 -- }}}
 
 -- imports {{{
+import           Control.Monad
 import           Data.Complex
+import           Data.List (intercalate, sortBy)
 import           Data.Monoid
+import           Data.Ord (comparing)
 import           Graphics.EasyPlot
 
 import           Koar.Common
@@ -220,6 +223,31 @@ dfGain g = DF $ RR g mempty mempty
 
 -- }}}
 
+-- two-pole {{{
+
+dfTwoPole :: R -> R -> DF
+dfTwoPole f r = DF . RR 1 mempty $ RP [] [mkPolar r $ 2 * pi * f]
+
+-- }}}
+
+-- four-pole {{{
+
+dfFourPole :: R -> R -> R -> R -> DF
+dfFourPole f1 r1 f2 r2 = dfGain (1/dc) <> df
+  where
+    df = dfTwoPole f1 r1 <> dfTwoPole f2 r2
+    dc = magDF df 0
+
+probeFourPole :: R -> R -> R -> R -> IO ()
+probeFourPole f1 r1 f2 r2 = probeRR points . unDF $ dfFourPole f1 r1 f2 r2
+  where
+    points = commonPoints ++
+        [ (f1, "f1")
+        , (f2, "f2")
+        ]
+
+-- }}}
+
 -- DC blocker {{{
 
 dfBlockDC :: R -> DF
@@ -399,7 +427,7 @@ plotRR tf = plot' [Interactive] X11
     | ps <- circles
     ]
   where
-    db = max (-90) . (*) 20 . logBase 10 . magnitude . rrEval tf
+    db = min 90 . max (-90) . (*) 20 . logBase 10 . magnitude . rrEval tf
     mag :: R -> R -> R
     mag a b = db (a :+ b)
     circles =
@@ -409,6 +437,40 @@ plotRR tf = plot' [Interactive] X11
           , let z = mkPolar r (theta * 2 * pi)
           ]
         | r <- [0.1, 0.2 .. 1]
+        ]
+
+-- }}}
+
+-- probing {{{
+
+probeRR :: [(R, String)] -> RealRat -> IO ()
+probeRR ps tf = do
+    putStrLn "magnitudes:"
+    forM_ samples $ \(mag, label) ->
+        putStrLn $ '\t' : label ++ ": " ++ dBshow mag
+    putStrLn "differences (row - column):"
+    forM_ rows $ putStrLn . (:) '\t'
+  where
+    ps' = sortBy (comparing fst) ps
+    samples =
+        [ (mag, label)
+        | (f, label) <- ps'
+        , let mag = magnitude . rrEval tf . mkPolar 1 $ 2 * pi * f
+        ]
+    table = [ [ if l1 == l2 then l1 else dBshow . exp $ log m1 - log m2
+              | (m2, l2) <- ps' ]
+            | (m1, l1) <- ps' ]
+    width = maximum $ map (maximum . map length) table
+    rjust s = replicate (max 0 $ width - length s) ' ' ++ s
+    rows = map (intercalate " " . map rjust) table
+
+commonPoints =
+        [ (0, "dc")
+        , (1/32, "1/32")
+        , (1/16, "1/16")
+        , (1/8, "1/8")
+        , (1/4, "1/4")
+        , (1/2, "1/2")
         ]
 
 -- }}}

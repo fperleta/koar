@@ -32,7 +32,11 @@ dBn :: R -> R
 dBn = dB . negate
 
 dBshow :: R -> String
-dBshow x = printf "%.2fdB" $ 20 * logBase 10 x
+dBshow x
+    | isInfinite x = (if x > 0 then '+' else '-') : "∞"
+    | isNaN x = "NaN"
+    | x == 0 = "-∞"
+    | otherwise = printf "%+.2fdB" $ 20 * logBase 10 x
 
 -- }}}
 
