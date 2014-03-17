@@ -42,13 +42,43 @@ score = scale (sec $ 60 / 163) $ do
 
     shift 32 . frame 16 $ do
         freq <- makeSum
-        blit <- blitMake freq final
+        blit <- blitMake freq master
         blitBipolar blit
 
         fenv <- envMake freq =<< toNormFreq' (hz 1)
         envLin fenv 0.001 4
         shift 4 $ envXdec fenv 0 4
         shift 8 $ envLin fenv 0.1 8
+
+    shift 48 . frame 16 $ do
+        tmp <- makeSum
+        fsig <- makeSum
+        qsig <- makeSum
+
+        rs <- resonMake tmp fsig qsig final
+        resonMode rs ConstPeakGain 1
+
+        do
+            fenv <- envMake fsig =<< toNormFreq' (hz $ 4 * 880)
+            qenv <- envMake qsig 1000
+
+            do f <- toNormFreq' $ hz 440; envXdec fenv f 2
+            envLin qenv 100 8
+
+            shift 8 $ do
+                envConst qenv 2000
+                resonMode rs ConstPeakGain (dB 3)
+                frame 8 $ do
+                    out <- makeSum
+                    wireMake out fsig 0.01
+                    ph <- makeSum
+                    cos2piMake ph out
+                    wobble <- makeSum
+                    phasorMake wobble ph
+                    wenv <- envMake wobble =<< toNormFreq' 4
+                    return ()
+
+        noiseMake tmp 20350
 
     echo <- makeSum
     wireMake echo master 0.5

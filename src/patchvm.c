@@ -436,7 +436,8 @@ static const char* regtag_strings[] = {
     "dtap",
     "vdelay",
     "biquad",
-    "blit"
+    "blit",
+    "reson"
 };
 
 #if 0

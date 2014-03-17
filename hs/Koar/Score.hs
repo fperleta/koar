@@ -177,6 +177,7 @@ data Kind
     | VDelay
     | Biquad
     | Blit
+    | Reson
 
 -- }}}
 
@@ -198,6 +199,7 @@ data Tag :: Kind -> * where
     TagVDelay :: Tag VDelay
     TagBiquad :: Tag Biquad
     TagBlit :: Tag Blit
+    TagReson :: Tag Reson
 
 -- }}}
 
@@ -219,10 +221,11 @@ data TagProd a = TagProd
     , tpVDelay :: a
     , tpBiquad :: a
     , tpBlit :: a
+    , tpReson :: a
     }
 
 diagTP :: a -> TagProd a
-diagTP x = TagProd x x x x x x x x x x x x x x x
+diagTP x = TagProd x x x x x x x x x x x x x x x x
 
 mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
 mapTP f tp =
@@ -241,6 +244,7 @@ mapTP f tp =
     , f TagVDelay $ tpVDelay tp
     , f TagBiquad $ tpBiquad tp
     , f TagBlit $ tpBlit tp
+    , f TagReson $ tpReson tp
     ]
 
 -- }}}
@@ -334,6 +338,11 @@ instance IsKind Blit where
     kindTag = TagBlit
     getTP _ = tpBlit
     setTP _ x tp = tp { tpBlit = x }
+
+instance IsKind Reson where
+    kindTag = TagReson
+    getTP _ = tpReson
+    setTP _ x tp = tp { tpReson = x }
 
 -- }}}
 

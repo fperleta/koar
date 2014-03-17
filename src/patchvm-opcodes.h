@@ -438,4 +438,31 @@ RESERVED (117)
 
 // }}}
 
+// (118 - 121) resons {{{
+
+OPCODE (118, "reson/make", reson_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "fsig")
+    ARG (A_REG + T_PNODE, "qsig")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (119, "reson/pure", reson_pure)
+    ARG (A_REG + T_RESON, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+OPCODE (120, "reson/res", reson_res)
+    ARG (A_REG + T_RESON, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+OPCODE (121, "reson/peak", reson_peak)
+    ARG (A_REG + T_RESON, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+// }}}
+
 // vim:fdm=marker:

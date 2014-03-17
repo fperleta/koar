@@ -138,6 +138,12 @@ data Instr
     | I_blit_unipolar Reg
     | I_blit_bipolar Reg
 
+    -- resons:
+    | I_reson_make Reg Reg Reg Reg Reg
+    | I_reson_pure Reg Double
+    | I_reson_res Reg Double
+    | I_reson_peak Reg Double
+
   deriving (Eq, Show)
 
 -- }}}
@@ -235,6 +241,12 @@ bInstr x = case x of
     I_blit_jump r phase         -> bNat 114 <> bNat r <> bDbl phase
     I_blit_unipolar r           -> bNat 115 <> bNat r
     I_blit_bipolar r            -> bNat 116 <> bNat r
+
+    I_reson_make r src fsig qsig snk
+                                -> bNat 118 <> bNat r <> bNat src <> bNat fsig <> bNat qsig <> bNat snk
+    I_reson_pure r gain         -> bNat 119 <> bNat r <> bDbl gain
+    I_reson_res r gain          -> bNat 120 <> bNat r <> bDbl gain
+    I_reson_peak r gain         -> bNat 121 <> bNat r <> bDbl gain
 
 -- }}}
 

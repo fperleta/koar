@@ -408,4 +408,35 @@ blitBipolar blit = event $ genE . emit . I_blit_bipolar =<< regE blit
 
 -- }}}
 
+-- reson {{{
+
+resonMake :: Ref s P -> Ref s P -> Ref s P -> Ref s P -> Score s (Ref s Reson)
+resonMake src fsig qsig snk = do
+    r <- freshRef TagReson
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regFsig <- regE fsig
+        regQsig <- regE qsig
+        regSnk <- regE snk
+        genE . emit $ I_reson_make reg regSrc regFsig regQsig regSnk
+    return r
+
+data ResonMode
+    = Pure2Pole
+    | ConstResGain
+    | ConstPeakGain
+
+resonMode :: Ref s Reson -> ResonMode -> Double -> Score s ()
+resonMode rs mode gain = event $ do
+    let opc = case mode of
+            Pure2Pole -> I_reson_pure
+            ConstResGain -> I_reson_res
+            ConstPeakGain -> I_reson_peak
+    reg <- regE rs
+    genE . emit $ opc reg gain
+
+-- }}}
+
 -- vim:fdm=marker:
