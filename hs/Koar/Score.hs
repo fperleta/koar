@@ -178,6 +178,7 @@ data Kind
     | Biquad
     | Blit
     | Reson
+    | Tanh
 
 -- }}}
 
@@ -200,6 +201,7 @@ data Tag :: Kind -> * where
     TagBiquad :: Tag Biquad
     TagBlit :: Tag Blit
     TagReson :: Tag Reson
+    TagTanh :: Tag Tanh
 
 -- }}}
 
@@ -222,10 +224,11 @@ data TagProd a = TagProd
     , tpBiquad :: a
     , tpBlit :: a
     , tpReson :: a
+    , tpTanh :: a
     }
 
 diagTP :: a -> TagProd a
-diagTP x = TagProd x x x x x x x x x x x x x x x x
+diagTP x = TagProd x x x x x x x x x x x x x x x x x
 
 mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
 mapTP f tp =
@@ -245,6 +248,7 @@ mapTP f tp =
     , f TagBiquad $ tpBiquad tp
     , f TagBlit $ tpBlit tp
     , f TagReson $ tpReson tp
+    , f TagTanh $ tpTanh tp
     ]
 
 -- }}}
@@ -343,6 +347,11 @@ instance IsKind Reson where
     kindTag = TagReson
     getTP _ = tpReson
     setTP _ x tp = tp { tpReson = x }
+
+instance IsKind Tanh where
+    kindTag = TagTanh
+    getTP _ = tpTanh
+    setTP _ x tp = tp { tpTanh = x }
 
 -- }}}
 

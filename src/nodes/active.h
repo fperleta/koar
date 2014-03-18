@@ -95,6 +95,14 @@ extern anode_t N_reson_make (patch_t, pnode_t, pnode_t, pnode_t, pnode_t);
 
 // }}}
 
+// tanhs {{{
+
+extern anode_t N_tanh_make (patch_t, pnode_t, pnode_t);
+extern void N_tanh_gain (anode_t, samp_t);
+extern void N_tanh_slope (anode_t, samp_t);
+
+// }}}
+
 // touches {{{
 
 extern anode_t N_touch (patch_t, pnode_t);

@@ -144,6 +144,11 @@ data Instr
     | I_reson_res Reg Double
     | I_reson_peak Reg Double
 
+    -- tanhs:
+    | I_tanh_make Reg Reg Reg
+    | I_tanh_gain Reg Double
+    | I_tanh_slope Reg Double
+
   deriving (Eq, Show)
 
 -- }}}
@@ -247,6 +252,10 @@ bInstr x = case x of
     I_reson_pure r gain         -> bNat 119 <> bNat r <> bDbl gain
     I_reson_res r gain          -> bNat 120 <> bNat r <> bDbl gain
     I_reson_peak r gain         -> bNat 121 <> bNat r <> bDbl gain
+
+    I_tanh_make r src snk       -> bNat 122 <> bNat r <> bNat src <> bNat snk
+    I_tanh_gain r gain          -> bNat 123 <> bNat r <> bDbl gain
+    I_tanh_slope r slope        -> bNat 124 <> bNat r <> bDbl slope
 
 -- }}}
 

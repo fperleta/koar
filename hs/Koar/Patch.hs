@@ -439,4 +439,29 @@ resonMode rs mode gain = event $ do
 
 -- }}}
 
+-- tanh {{{
+
+tanhMake :: Ref s P -> Ref s P -> Score s (Ref s Tanh)
+tanhMake src snk = do
+    r <- freshRef TagTanh
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regSnk <- regE snk
+        genE . emit $ I_tanh_make reg regSrc regSnk
+    return r
+
+tanhGain :: Ref s Tanh -> Double -> Score s ()
+tanhGain th gain = event $ do
+    reg <- regE th
+    genE . emit $ I_tanh_gain reg gain
+
+tanhSlope :: Ref s Tanh -> Double -> Score s ()
+tanhSlope th slope = event $ do
+    reg <- regE th
+    genE . emit $ I_tanh_slope reg slope
+
+-- }}}
+
 -- vim:fdm=marker:

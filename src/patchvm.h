@@ -33,6 +33,7 @@ typedef enum {
     T_BIQUAD,
     T_BLIT,
     T_RESON,
+    T_TANH,
 
     NUM_REGTAGS
 } regtag_t;

@@ -465,4 +465,26 @@ END
 
 // }}}
 
+// (122 - 125) tanhs {{{
+
+OPCODE (122, "tanh/make", tanh_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (123, "tanh/gain", tanh_gain)
+    ARG (A_REG + T_TANH, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+OPCODE (124, "tanh/slope", tanh_slope)
+    ARG (A_REG + T_TANH, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+RESERVED (125)
+
+// }}}
+
 // vim:fdm=marker:

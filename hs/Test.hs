@@ -191,7 +191,9 @@ chirp out amp f0 f1 dur = frame dur $ do
 
     phasorMake fc pc
     cos2piMake pc xx
-    wireMake xx out amp
+    th <- tanhMake xx out
+    tanhGain th amp
+    tanhSlope th $ dB 3
 
     fenv <- envMake fc =<< toNormFreq' f0
     toNormFreq' f1 >>= \f -> envXdec fenv f $ scaleTime (1/5) dur
