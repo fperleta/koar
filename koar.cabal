@@ -13,6 +13,7 @@ library
                         Koar.Patch,
                         Koar.Patchctl,
                         Koar.Score
+  other-modules:        Koar.Proto
   hs-source-dirs:       hs
   build-depends:        base >=4.6,
                         bytestring >=0.10,
