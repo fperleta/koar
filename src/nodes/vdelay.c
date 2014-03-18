@@ -15,6 +15,7 @@ typedef struct vdelay_s* vdelay_t;
 struct vdelay_s {
     size_t len, head;
     samp_t* hs;
+    samp_t s1, s2;
     samp_t g_raw, g_del, g_fb;
 };
 
@@ -28,28 +29,36 @@ vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len
     size_t i, n = vd->len, hd = vd->head;
     samp_t* hs = vd->hs;
 
+    samp_t s1 = vd->s1, s2 = vd->s2;
     for (i = 0; i < len; i++)
     {
         samp_t x = xs[i];
         samp_t d = fabs (ds[i]);
-        size_t k = floor (d);
-        samp_t p = d - floor (d);
 
-        samp_t r = 0;
-        if (unlikely (k > n - 2))
-            r = 0;
-        else
-        {
-            hs[(n + hd) % n] = x;
-            samp_t r0 = hs[(n + hd - k) % n];
-            samp_t r1 = hs[(n + hd - k - 1) % n];
-            r = (1 - p) * r0 + p * r1;
-        }
+        int l = round (d - 2);
+        size_t offs = likely (l > 0)? l : 0;
+        samp_t dd = d - offs;
 
-        ys[i] = vd->g_raw * x + vd->g_del * r;
-        hs[(n + hd) % n] = x + vd->g_fb * r;
+        // non-interpolating delay line
+        samp_t v
+            = unlikely (offs == 0)? x
+            : unlikely (offs > n)? 0
+            : hs[(n + hd - offs) % n];
+
+        // second-order thiran allpass interpolator
+        samp_t a1 = -(dd - 2) / (dd + 1);
+        samp_t a2 = (dd - 2) * (dd - 1) / ((dd + 1) * (dd + 2));
+
+        samp_t y = a2 * v + s1;
+        s1 = a1 * v - a1 * y + s2;
+        s2 = v - a2 * y;
+
+        ys[i] = vd->g_raw * x + vd->g_del * y;
+        hs[hd] = x + vd->g_fb * y;
         hd = (hd + 1) % n;
     }
+    vd->s1 = s1;
+    vd->s2 = s2;
 
     vd->head = hd;
 }
@@ -117,6 +126,7 @@ N_vdelay_make (patch_t p, pnode_t src, pnode_t dsig, pnode_t snk, size_t len)
     vd->len = len;
     vd->head = 0;
     vd->hs = xmalloc (sizeof (samp_t) * len);
+    vd->s1 = vd->s2 = 0;
     vd->g_raw = 0;
     vd->g_del = 1;
     vd->g_fb = 0;
