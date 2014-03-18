@@ -7,7 +7,10 @@ build-type:             Simple
 cabal-version:          >=1.8
 
 library
-  exposed-modules:      Koar.Patch,
+  exposed-modules:      Koar.Common,
+                        Koar.Equalizer,
+                        Koar.LTI,
+                        Koar.Patch,
                         Koar.Patchctl,
                         Koar.Score
   hs-source-dirs:       hs
