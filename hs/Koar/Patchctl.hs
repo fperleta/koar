@@ -125,6 +125,7 @@ data Instr
     -- vdelays:
     | I_vdelay_make Reg Reg Reg Reg Nat
     | I_vdelay_gains Reg Double Double Double
+    | I_vdelay_freqmode Reg
 
     -- biquads:
     | I_biquad_make Reg Reg Reg Nat
@@ -234,7 +235,8 @@ bInstr x = case x of
 
     I_vdelay_make r src dsig snk len
                                 -> bNat 104 <> bNat r <> bNat src <> bNat dsig <> bNat snk <> bNat len
-    I_vdelay_gains r raw del fb  -> bNat 105 <> bNat r <> bDbl raw <> bDbl del <> bDbl fb
+    I_vdelay_gains r raw del fb -> bNat 105 <> bNat r <> bDbl raw <> bDbl del <> bDbl fb
+    I_vdelay_freqmode r         -> bNat 106 <> bNat r
 
     I_biquad_make r src snk n   -> bNat 108 <> bNat r <> bNat src <> bNat snk <> bNat n
     I_biquad_gain r gain        -> bNat 109 <> bNat r <> bDbl gain

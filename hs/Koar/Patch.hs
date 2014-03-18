@@ -350,6 +350,11 @@ vdelayGains vd raw del fb = event $ do
     reg <- regE vd
     genE . emit $ I_vdelay_gains reg raw del fb
 
+vdelayFreqMode :: Ref s VDelay -> Score s ()
+vdelayFreqMode vd = event $ do
+    reg <- regE vd
+    genE . emit $ I_vdelay_freqmode reg
+
 -- }}}
 
 -- biquad {{{

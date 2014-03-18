@@ -13,6 +13,10 @@
 typedef struct vdelay_s* vdelay_t;
 
 struct vdelay_s {
+    enum {
+        DELAY_TIME = 0,
+        DELAY_FREQ
+    } mode;
     size_t len, head;
     samp_t* hs;
     samp_t s1, s2;
@@ -33,7 +37,7 @@ vd_loop (vdelay_t vd, const samp_t* xs, const samp_t* ds, samp_t* ys, size_t len
     for (i = 0; i < len; i++)
     {
         samp_t x = xs[i];
-        samp_t d = fabs (ds[i]);
+        samp_t d = (vd->mode == DELAY_TIME)? fabs (ds[i]) : 1/fabs (ds[i]);
 
         int l = round (d - 2);
         size_t offs = likely (l > 0)? l : 0;
@@ -175,6 +179,24 @@ PATCHVM_vdelay_gains (patchvm_t vm, instr_t instr)
     samp_t g_del = instr->args[2].dbl;
     samp_t g_fb = instr->args[3].dbl;
     N_vdelay_gains (an, g_raw, g_del, g_fb);
+}
+
+// }}}
+
+// freqmode {{{
+
+void
+N_vdelay_freqmode (anode_t an)
+{
+    vdelay_t vd = anode_state (an);
+    vd->mode = DELAY_FREQ;
+}
+
+void
+PATCHVM_vdelay_freqmode (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    N_vdelay_freqmode (an);
 }
 
 // }}}

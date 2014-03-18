@@ -376,7 +376,10 @@ OPCODE (105, "vdelay/gains", vdelay_gains)
     ARG (A_DOUBLE, "fb")
 END
 
-RESERVED (106)
+OPCODE (106, "vdelay/freq-mode", vdelay_freqmode)
+    ARG (A_REG + T_VDELAY, "self")
+END
+
 RESERVED (107)
 
 // }}}
