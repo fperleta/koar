@@ -7,7 +7,7 @@
 #ifndef KOAR_DEFS_H
 #define KOAR_DEFS_H
 
-#define KOAR_VERSION "0"
+#define KOAR_VERSION "0.1"
 
 // includes {{{
 #include <stdint.h>

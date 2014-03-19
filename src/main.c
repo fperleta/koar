@@ -207,7 +207,7 @@ main (int argc, char** argv)
         log_stdout = 0;
     log_verbose = args.verbose;
 
-    log_emit (LOG_NORMAL, "koar %s - copyright (c) 2013 Frano Perleta", KOAR_VERSION);
+    log_emit (LOG_NORMAL, "koar %s - copyright (c) 2014 Frano Perleta", KOAR_VERSION);
 
     /* open the log file in /tmp */
     if (args.logging)
