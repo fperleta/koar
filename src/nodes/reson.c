@@ -47,7 +47,7 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
                 samp_t y = x + h1;
 
                 samp_t f = fs[i];
-                samp_t r = 1 - 1/qs[i];
+                samp_t r = exp (-2*M_PI*f / sqrt (4*qs[i]*qs[i] - 1));
                 samp_t a1 = -2 * r * cos (f);
                 samp_t a2 = r * r;
 
@@ -65,7 +65,7 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
                 samp_t y = x + h1;
 
                 samp_t f = fs[i];
-                samp_t r = 1 - 1/qs[i];
+                samp_t r = exp (-2*M_PI*f / sqrt (4*qs[i]*qs[i] - 1));
                 samp_t a1 = -2 * r * cos (f);
                 samp_t a2 = r * r;
 
@@ -83,7 +83,7 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
                 samp_t y = x + h1;
 
                 samp_t f = fs[i];
-                samp_t r = 1 - 1/qs[i];
+                samp_t r = exp (-2*M_PI*f / sqrt (4*qs[i]*qs[i] - 1));
                 samp_t a1 = -2 * r * cos (f);
                 samp_t a2 = r * r;
 
