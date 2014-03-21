@@ -432,6 +432,7 @@ data ResonMode
     = Pure2Pole
     | ConstResGain
     | ConstPeakGain
+    | LowPass2Pole
 
 resonMode :: Ref s Reson -> ResonMode -> Double -> Score s ()
 resonMode rs mode gain = event $ do
@@ -439,6 +440,7 @@ resonMode rs mode gain = event $ do
             Pure2Pole -> I_reson_pure
             ConstResGain -> I_reson_res
             ConstPeakGain -> I_reson_peak
+            LowPass2Pole -> I_reson_lowpass
     reg <- regE rs
     genE . emit $ opc reg gain
 

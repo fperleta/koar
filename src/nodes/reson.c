@@ -16,7 +16,8 @@ struct reson_s {
     enum {
         PURE_2POLE = 0,
         RES_GAIN,
-        PEAK_GAIN
+        PEAK_GAIN,
+        LOWPASS
     } mode;
     samp_t gain;
     samp_t h1, h2;
@@ -32,15 +33,10 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
 {
     size_t i;
 
-    // implement all three:
-    // - pure two-pole (done)
-    // - constant resonance gain (zeroes at ±R)
-    // - constant peak gain (zeroes at ±1)
-
     samp_t h1 = rs->h1, h2 = rs->h2;
     switch (rs->mode)
     {
-        case PURE_2POLE:
+        case PURE_2POLE: // unnormalized 2-pole filter {{{
             for (i = 0; i < len; i++)
             {
                 samp_t x = xs[i];
@@ -56,9 +52,9 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
 
                 ys[i] = rs->gain * y;
             }
-            break;
+            break; // }}}
 
-        case RES_GAIN:
+        case RES_GAIN: // constant resonance gain (zeros at ±R) {{{
             for (i = 0; i < len; i++)
             {
                 samp_t x = xs[i];
@@ -74,9 +70,9 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
 
                 ys[i] = rs->gain * (1 - r) * y;
             }
-            break;
+            break; // }}}
 
-        case PEAK_GAIN:
+        case PEAK_GAIN: // constant peak gain (zeroes at ±1) {{{
             for (i = 0; i < len; i++)
             {
                 samp_t x = xs[i];
@@ -92,7 +88,26 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
 
                 ys[i] = rs->gain * 0.5 * (1 - r*r) * y;
             }
-            break;
+            break; // }}}
+
+        case LOWPASS: // lowpass (both zeros at -1) {{{
+            for (i = 0; i < len; i++)
+            {
+                samp_t x = xs[i];
+                samp_t y = x + h1;
+
+                samp_t f = fs[i];
+                samp_t r = exp (-2*M_PI*f / sqrt (4*qs[i]*qs[i] - 1));
+                samp_t a1 = -2 * r * cos (f);
+                samp_t a2 = r * r;
+
+                h1 = 2 * x + -a1 * y + h2;
+                h2 = x - a2 * y;
+
+                // H(1) = 4/(1 + a1 + a2)
+                ys[i] = rs->gain * (1 + a1 + a2) * 0.25 * y;
+            }
+            break; // }}}
 
         default:
             panic ("this should never happen");
@@ -234,6 +249,26 @@ PATCHVM_reson_peak (patchvm_t vm, instr_t instr)
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
     samp_t gain = instr->args[1].dbl;
     N_reson_peak (an, gain);
+}
+
+// }}}
+
+// lowpass {{{
+
+void
+N_reson_lowpass (anode_t an, samp_t gain)
+{
+    reson_t rs = anode_state (an);
+    rs->mode = LOWPASS;
+    rs->gain = gain;
+}
+
+void
+PATCHVM_reson_lowpass (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    samp_t gain = instr->args[1].dbl;
+    N_reson_lowpass (an, gain);
 }
 
 // }}}

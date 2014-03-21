@@ -60,14 +60,15 @@ score = scale (sec $ 60 / 163) $ do
 
         do
             fenv <- envMake fsig =<< toNormFreq' (hz $ 4 * 880)
-            qenv <- envMake qsig 1000
+            qenv <- envMake qsig 1
 
             do f <- toNormFreq' $ hz 440; envXdec fenv f 2
-            envLin qenv 100 8
+            envLin qenv 50 8
 
             shift 8 $ do
-                envConst qenv 2000
-                resonMode rs ConstPeakGain (dB 3)
+                do f <- toNormFreq' (hz 880); envXdec fenv f 2
+                envLin qenv 100 8
+                resonMode rs LowPass2Pole (dBn 3)
                 frame 8 $ do
                     out <- makeSum
                     wireMake out fsig 0.01
@@ -75,10 +76,32 @@ score = scale (sec $ 60 / 163) $ do
                     cos2piMake ph out
                     wobble <- makeSum
                     phasorMake wobble ph
-                    wenv <- envMake wobble =<< toNormFreq' 4
+                    wenv <- envMake wobble =<< toNormFreq' 2
                     return ()
 
         noiseMake tmp 20350
+
+    shift 64 . frame 16 $ do
+        tmp <- makeSum
+        fsig <- makeSum
+        qsig <- makeSum
+
+        rs <- resonMake tmp fsig qsig final
+        resonMode rs LowPass2Pole 1
+
+        do
+            fenv <- envMake fsig =<< toNormFreq' (hz $ 4 * 880)
+            qenv <- envMake qsig 100
+
+            do f <- toNormFreq' $ hz 110; envXdec fenv f 2
+            envLin qenv 20 8
+
+            fsig' <- makeSum; fenv' <- envMake fsig' =<< toNormFreq' (hz 100)
+
+            blit <- blitMake fsig' tmp
+            --blitBipolar blit
+
+            return ()
 
     echo <- makeSum
     wireMake echo master 0.5

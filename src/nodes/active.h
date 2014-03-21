@@ -92,6 +92,10 @@ extern void N_phasor_jump (anode_t, samp_t);
 // resons {{{
 
 extern anode_t N_reson_make (patch_t, pnode_t, pnode_t, pnode_t, pnode_t);
+extern void N_reson_pure (anode_t, samp_t);
+extern void N_reson_res (anode_t, samp_t);
+extern void N_reson_peak (anode_t, samp_t);
+extern void N_reson_lowpass (anode_t, samp_t);
 
 // }}}
 

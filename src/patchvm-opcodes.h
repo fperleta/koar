@@ -441,7 +441,7 @@ RESERVED (117)
 
 // }}}
 
-// (118 - 121) resons {{{
+// (118 - 123) resons {{{
 
 OPCODE (118, "reson/make", reson_make)
     ARG (A_ANYREG, "self")
@@ -466,27 +466,34 @@ OPCODE (121, "reson/peak", reson_peak)
     ARG (A_DOUBLE, "gain")
 END
 
+OPCODE (122, "reson/lowpass", reson_lowpass)
+    ARG (A_REG + T_RESON, "self")
+    ARG (A_DOUBLE, "gain")
+END
+
+RESERVED (123)
+
 // }}}
 
-// (122 - 125) tanhs {{{
+// (124 - 127) tanhs {{{
 
-OPCODE (122, "tanh/make", tanh_make)
+OPCODE (124, "tanh/make", tanh_make)
     ARG (A_ANYREG, "self")
     ARG (A_REG + T_PNODE, "src")
     ARG (A_REG + T_PNODE, "snk")
 END
 
-OPCODE (123, "tanh/gain", tanh_gain)
+OPCODE (125, "tanh/gain", tanh_gain)
     ARG (A_REG + T_TANH, "self")
     ARG (A_DOUBLE, "gain")
 END
 
-OPCODE (124, "tanh/slope", tanh_slope)
+OPCODE (126, "tanh/slope", tanh_slope)
     ARG (A_REG + T_TANH, "self")
     ARG (A_DOUBLE, "gain")
 END
 
-RESERVED (125)
+RESERVED (127)
 
 // }}}
 
