@@ -458,20 +458,27 @@ probeRR ps tf = do
         , let mag = magnitude . rrEval tf . mkPolar 1 $ 2 * pi * f
         ]
     table = [ [ if l1 == l2 then l1 else dBshow . exp $ log m1 - log m2
-              | (m2, l2) <- ps' ]
-            | (m1, l1) <- ps' ]
+              | (m2, l2) <- samples ]
+            | (m1, l1) <- samples ]
     width = maximum $ map (maximum . map length) table
     rjust s = replicate (max 0 $ width - length s) ' ' ++ s
     rows = map (intercalate " " . map rjust) table
 
 commonPoints =
-        [ (0, "dc")
-        , (1/32, "1/32")
-        , (1/16, "1/16")
-        , (1/8, "1/8")
-        , (1/4, "1/4")
-        , (1/2, "1/2")
-        ]
+    [ (0, "dc")
+    , (1/32, "1/32")
+    , (1/16, "1/16")
+    , (1/8, "1/8")
+    , (1/4, "1/4")
+    , (1/2, "1/2")
+    ]
+
+densePoints = commonPoints ++
+    [ (1/64, "1/64")
+    , (1/128, "1/128")
+    , (1/256, "1/256")
+    , (1/512, "1/512")
+    ]
 
 -- }}}
 
