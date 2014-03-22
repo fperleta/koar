@@ -179,6 +179,7 @@ data Kind
     | Blit
     | Reson
     | Tanh
+    | Moog
 
 -- }}}
 
@@ -202,6 +203,7 @@ data Tag :: Kind -> * where
     TagBlit :: Tag Blit
     TagReson :: Tag Reson
     TagTanh :: Tag Tanh
+    TagMoog :: Tag Moog
 
 -- }}}
 
@@ -225,10 +227,11 @@ data TagProd a = TagProd
     , tpBlit :: a
     , tpReson :: a
     , tpTanh :: a
+    , tpMoog :: a
     }
 
 diagTP :: a -> TagProd a
-diagTP x = TagProd x x x x x x x x x x x x x x x x x
+diagTP x = TagProd x x x x x x x x x x x x x x x x x x
 
 mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
 mapTP f tp =
@@ -249,6 +252,7 @@ mapTP f tp =
     , f TagBlit $ tpBlit tp
     , f TagReson $ tpReson tp
     , f TagTanh $ tpTanh tp
+    , f TagMoog $ tpMoog tp
     ]
 
 -- }}}
@@ -352,6 +356,11 @@ instance IsKind Tanh where
     kindTag = TagTanh
     getTP _ = tpTanh
     setTP _ x tp = tp { tpTanh = x }
+
+instance IsKind Moog where
+    kindTag = TagMoog
+    getTP _ = tpMoog
+    setTP _ x tp = tp { tpMoog = x }
 
 -- }}}
 

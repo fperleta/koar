@@ -471,4 +471,26 @@ tanhSlope th slope = event $ do
 
 -- }}}
 
+-- moog {{{
+
+moogMake :: Ref s P -> Ref s P -> Ref s P -> Ref s P -> Score s (Ref s Moog)
+moogMake src fsig ksig snk = do
+    r <- freshRef TagMoog
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regSrc <- regE src
+        regFsig <- regE fsig
+        regKsig <- regE ksig
+        regSnk <- regE snk
+        genE . emit $ I_moog_make reg regSrc regFsig regKsig regSnk
+    return r
+
+moogParams :: Ref s Moog -> Double -> Double -> Double -> Score s ()
+moogParams moog gain drive thermal = event $ do
+    reg <- regE moog
+    genE . emit $ I_moog_params reg gain drive thermal
+
+-- }}}
+
 -- vim:fdm=marker:

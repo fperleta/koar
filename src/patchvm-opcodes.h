@@ -497,4 +497,23 @@ RESERVED (127)
 
 // }}}
 
+// (128 - 129) moogs {{{
+
+OPCODE (128, "moog/make", moog_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src")
+    ARG (A_REG + T_PNODE, "fsig")
+    ARG (A_REG + T_PNODE, "ksig")
+    ARG (A_REG + T_PNODE, "snk")
+END
+
+OPCODE (129, "moog/params", moog_params)
+    ARG (A_REG + T_MOOG, "self")
+    ARG (A_DOUBLE, "gain")
+    ARG (A_DOUBLE, "drive")
+    ARG (A_DOUBLE, "thermal")
+END
+
+// }}}
+
 // vim:fdm=marker:

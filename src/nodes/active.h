@@ -73,6 +73,12 @@ extern void N_lookup_table (anode_t, array_t);
 
 // }}}
 
+// moogs {{{
+
+extern anode_t N_moog_make (patch_t, pnode_t, pnode_t, pnode_t, pnode_t);
+
+// }}}
+
 // noises {{{
 
 extern anode_t N_noise_make (patch_t, pnode_t, unsigned);

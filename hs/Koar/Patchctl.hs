@@ -151,6 +151,10 @@ data Instr
     | I_tanh_gain Reg Double
     | I_tanh_slope Reg Double
 
+    -- moogs:
+    | I_moog_make Reg Reg Reg Reg Reg
+    | I_moog_params Reg Double Double Double
+
   deriving (Eq, Show)
 
 -- }}}
@@ -260,6 +264,11 @@ bInstr x = case x of
     I_tanh_make r src snk       -> bNat 124 <> bNat r <> bNat src <> bNat snk
     I_tanh_gain r gain          -> bNat 125 <> bNat r <> bDbl gain
     I_tanh_slope r slope        -> bNat 126 <> bNat r <> bDbl slope
+
+    I_moog_make r src fsig ksig snk
+                                -> bNat 128 <> bNat r <> bNat src <> bNat fsig <> bNat ksig <> bNat snk
+    I_moog_params r gain drive thermal
+                                -> bNat 129 <> bNat r <> bDbl gain <> bDbl drive <> bDbl thermal
 
 -- }}}
 
