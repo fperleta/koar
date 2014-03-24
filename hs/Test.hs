@@ -103,6 +103,33 @@ score = scale (sec $ 60 / 163) $ do
 
             return ()
 
+    shift 80 . frame 32 $ do
+        tmp <- makeSum; touch tmp
+        fsig <- makeSum
+        ksig <- makeSum
+
+        moog <- moogMake tmp fsig ksig final
+
+        do
+            fenv <- envMake fsig =<< toNormFreq' (hz $ 880)
+            kenv <- envMake ksig 0
+
+            --do f <- toNormFreq' . hz $ 4 * 880; envLin fenv f 16
+            envLin kenv 3.5 14
+            shift 14 $ envXdec kenv 0 2
+
+            fsig' <- makeSum; fenv' <- envMake fsig' =<< toNormFreq' (hz 220)
+            --do f <- toNormFreq' . hz $ 440; envXdec fenv' f 16
+
+            frame 16 $ do
+                --noiseMake tmp 20350
+                blit <- blitMake fsig' tmp
+                blitGain blit $ dB 6
+                blitBipolar blit
+                return ()
+
+            return ()
+
     echo <- makeSum
     wireMake echo master 0.5
     dw <- dwriterMake echo (sec 4)

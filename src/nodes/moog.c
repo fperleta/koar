@@ -49,9 +49,9 @@
  *
  * The cutoff frequency of the filter is controlled with the `A` parameter:
  *
- *                      1 - π f_c[n]
- *      A[n] = π f_c[n] ------------
- *                      1 + π f_c[n]
+ *                            1 - π f_c[n]
+ *      A[n] = 4 V_T π f_c[n] ------------
+ *                            1 + π f_c[n]
  *
  * The signals `f_c` (normalized cutoff frequency) and `k` (resonance ∈ [0, 4])
  * are drawn from the source pnodes of the `moog` sources.
@@ -70,7 +70,6 @@ struct moog_s {
     samp_t v_drive;
     samp_t v_thermal;
     // values from the previous iteration, effectively z^-1.
-    samp_t v_out;
     samp_t v1, v2, v3, v4;
     samp_t dv1, dv2, dv3, dv4;
     samp_t vp1, vp2, vp3, vp4;
@@ -84,11 +83,11 @@ MACRO samp_t __attribute__ ((hot))
 moog_sample (moog_t m, samp_t x, samp_t f, samp_t k)
 {
     samp_t pif = M_PI * f;
-    samp_t a = pif * (1 - pif) / (1 + pif);
+    samp_t a = 4 * m->v_thermal * pif * (1 - pif) / (1 + pif);
     samp_t r2vt = 1 / (2 * m->v_thermal);
 
     samp_t v_in = m->v_drive * x;
-    samp_t v0 = -tanh ((v_in + k * m->v4) * r2vt);
+    samp_t v0 = -tanh ((v_in + k * m->vp4) * r2vt);
 
     samp_t dv1 = a * (v0 - m->v1);
     samp_t vp1 = m->vp1 + 0.5 * (dv1 + m->dv1);
@@ -110,9 +109,14 @@ moog_sample (moog_t m, samp_t x, samp_t f, samp_t k)
     samp_t v4 = tanh (vp4 * r2vt);
     m->dv4 = dv4; m->vp4 = vp4; m->v4 = v4;
 
-    m->v_out = vp4 * r2vt;
+    samp_t v_out = vp4 * r2vt;
 
-    return m->v_out;
+#if 0
+    printf ("v_in = %f; v0 = %f; a=%f; v1 = %f; v2 = %f; v3 = %f; v4 = %f; v_out = %f\n",
+            v_in, v0, a, v1, v2, v3, v4, v_out);
+#endif
+
+    return v_out;
 }
 
 static void __attribute__ ((hot))
@@ -182,10 +186,9 @@ N_moog_make (patch_t p, pnode_t src, pnode_t fsig, pnode_t ksig, pnode_t snk)
 
     moog_t m = anode_state (an);
     m->gain = 1;
-    m->v_drive = 0.05;
+    m->v_drive = 0.0517;
     m->v_thermal = 25.85e-3;
 
-    m->v_out = 0;
     m->v1 = m->v2 = m->v3 = m->v4 = 0;
     m->dv1 = m->dv2 = m->dv3 = m->dv4 = 0;
     m->vp1 = m->vp2 = m->vp3 = m->vp4 = 0;
