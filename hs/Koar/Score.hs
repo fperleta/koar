@@ -122,12 +122,12 @@ scaleTime a (Time s c) = Time (a * s) (a * c)
 
 
 data Freq = Freq
-    { freqHertz    ::  {-# UNPACK #-} !Rational
+    { freqHertz    ::  {-# UNPACK #-} !Double
     , freqPerCell  ::  {-# UNPACK #-} !Rational
     }
   deriving (Eq)
 
-hz :: Rational -> Freq
+hz :: Double -> Freq
 hz f = Freq f 0
 {-# INLINE hz #-}
 
@@ -146,14 +146,14 @@ instance Num Freq where
     signum = error "signum is undefined for frequencies"
 
 instance Fractional Freq where
-    fromRational = Freq 0
+    fromRational = Freq 0 . fromRational
     {-# INLINE fromRational #-}
 
     (/) = error "cannot divide quantities of frequency"
     recip = error "recip is undefined for frequencies"
 
 scaleFreq :: Rational -> Freq -> Freq
-scaleFreq a (Freq h p) = Freq (a * h) (a * p)
+scaleFreq a (Freq h p) = Freq (fromRational a * h) (a * p)
 
 -- }}}
 
@@ -697,30 +697,30 @@ toPeriods t = Score $ \s -> let
 toPeriods' :: Time -> Score s Double
 toPeriods' t = fromRational <$> toPeriods t
 
-toNormFreq :: Freq -> Score s Rational
+toNormFreq :: Freq -> Score s Double
 toNormFreq f = Score $ \s -> let
     { h = scrHere s
     ; sr = fromIntegral $ hereRate h
     ; dt = unSecs $ hereDT h
-    ; p = (freqHertz f + freqPerCell f / dt) / sr
+    ; p = (freqHertz f + fromRational (freqPerCell f / dt)) / sr
     } in (p, s, Stop)
 
 toNormFreq' :: Freq -> Score s Double
-toNormFreq' f = fromRational <$> toNormFreq f
+toNormFreq' = toNormFreq
 
 timeToFreq :: Time -> Score s Freq
 timeToFreq t = Score $ \s -> let
     { h = scrHere s
     ; dt = unSecs $ hereDT h
     ; f = recip $ timeSecs t + timeCells t * dt
-    } in (hz f, s, Stop)
+    } in (hz $ fromRational f, s, Stop)
 
 freqToTime :: Freq -> Score s Time
 freqToTime f = Score $ \s -> let
     { h = scrHere s
     ; dt = unSecs $ hereDT h
-    ; t = recip $ freqHertz f + freqPerCell f / dt
-    } in (sec t, s, Stop)
+    ; t = recip $ freqHertz f + fromRational (freqPerCell f / dt)
+    } in (sec $ toRational t, s, Stop)
 
 
 
