@@ -9,6 +9,7 @@ cabal-version:          >=1.8
 library
   exposed-modules:      Koar.Common,
                         Koar.Equalizer,
+                        Koar.Flow,
                         Koar.LTI,
                         Koar.Patch,
                         Koar.Patchctl,
