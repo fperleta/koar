@@ -78,6 +78,11 @@ graft :: Sink s ch' -> Pipe s ch ch' -> Score s (Sink s ch)
 graft snk (Pipe f) = f snk
 {-# INLINE graft #-}
 
+(+:) :: Pipe s ch' ch'' -> Pipe s ch ch' -> Pipe s ch ch''
+g +: f = Pipe $ \snk -> do
+    snk' <- graft snk g
+    graft snk' f
+
 instance Monoid (Src s ch) where
     mempty = Src $ \snk -> case snk of
         Sink1 m -> touch m
