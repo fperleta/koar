@@ -272,6 +272,27 @@ tanhShaper gain slope = pipeN $ \out -> do
 
 -- }}}
 
+-- staticPan {{{
+
+-- panning law:
+-- pan ∈ [-1, 1]
+-- left = (1/2 + pan/2)^2
+-- right = (1/2 - pan/2)^2
+-- total gain = 1/2 + pan^2/2
+-- center gain = 1/2 = -6dB
+
+staticPan :: R -> R -> Pipe s Mono Stereo
+staticPan gain pan = Pipe $ \(Sink2 l r) -> do
+    m <- makeSum
+    wireMake m l gL
+    wireMake m r gR
+    return $ Sink1 m
+  where
+    gL = gain * (pan - 1)^2 / 4
+    gR = gain * (pan + 1)^2 / 4
+
+-- }}}
+
 -- vdelay {{{
 
 vdelayTime, vdelayFreq :: forall s ch. Sink s ch -> Time -> R -> R -> R -> Pipe s ch ch
