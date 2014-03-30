@@ -260,6 +260,35 @@ reson mode gain (Sink1 fsig) (Sink1 qsig) = pipeN $ \out -> do
 
 -- }}}
 
+-- staticPan {{{
+
+-- pan ∈ [-1, 1] -- left to right
+-- x = sin (π pan / 2)
+--
+-- gains:
+-- * left = sqrt ((1 - x)/2)
+-- * right = sqrt (((1 + x)/2)
+--
+-- powers:
+-- * left = (1 - x)/2
+-- * right = (1 + x)/2
+-- * total = (1 - x + 1 + x)/2 = 2/2 = 1 = 0dB
+--
+-- when pan = 0, both gains are 1/sqrt(2) = -3dB.
+
+staticPan :: R -> R -> Pipe s Mono Stereo
+staticPan gain pan = Pipe $ \(Sink2 l r) -> do
+    m <- makeSum
+    wireMake m l gL
+    wireMake m r gR
+    return $ Sink1 m
+  where
+    x = sin (pi * pan / 2)
+    gL = gain * sqrt ((1 - x) / 2)
+    gR = gain * sqrt ((1 + x) / 2)
+
+-- }}}
+
 -- tanhShaper {{{
 
 tanhShaper :: R -> R -> Pipe s ch ch
@@ -269,27 +298,6 @@ tanhShaper gain slope = pipeN $ \out -> do
     tanhGain th gain
     tanhSlope th slope
     return inp
-
--- }}}
-
--- staticPan {{{
-
--- panning law:
--- pan ∈ [-1, 1]
--- left = (1/2 + pan/2)^2
--- right = (1/2 - pan/2)^2
--- total gain = 1/2 + pan^2/2
--- center gain = 1/2 = -6dB
-
-staticPan :: R -> R -> Pipe s Mono Stereo
-staticPan gain pan = Pipe $ \(Sink2 l r) -> do
-    m <- makeSum
-    wireMake m l gL
-    wireMake m r gR
-    return $ Sink1 m
-  where
-    gL = gain * (pan - 1)^2 / 4
-    gR = gain * (pan + 1)^2 / 4
 
 -- }}}
 
