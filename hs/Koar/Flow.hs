@@ -28,6 +28,13 @@ data Sink :: * -> Chans -> * where
     Sink1 :: Ref s P -> Sink s Mono
     Sink2 :: Ref s P -> Ref s P -> Sink s Stereo
 
+monoRefP :: Sink s Mono -> Ref s P
+monoRefP (Sink1 m) = m
+
+leftRefP, rightRefP :: Sink s Stereo -> Ref s P
+leftRefP (Sink2 l _) = l
+rightRefP (Sink2 _ r) = r
+
 data Src :: * -> Chans -> * where
     Src :: (Sink s ch -> Score s ()) -> Src s ch
 
@@ -145,10 +152,13 @@ dtap dl t = Src $ \snk -> case (snk, dl) of
 
 -- from {{{
 
-from :: R -> Sink s ch -> Src s ch
-from gain src = Src $ \snk -> case (src, snk) of
-    (Sink1 m, Sink1 m') -> void $ wireMake m m' gain
-    (Sink2 l r, Sink2 l' r') -> void $ wireMake l l' gain >> wireMake r r' gain
+from :: R -> Sink s ch -> Src s ch'
+from gain (Sink1 m) = Src $ \snk -> case snk of
+    Sink1 m' -> void $ wireMake m m' gain
+    Sink2 l' r' -> void $ wireMake m l' gain >> wireMake m r' gain
+from gain (Sink2 l r) = Src $ \snk -> case snk of
+    Sink1 m' -> void $ wireMake l m' gain >> wireMake r m' gain
+    Sink2 l' r' -> void $ wireMake l l' gain >> wireMake r r' gain
 
 -- }}}
 
