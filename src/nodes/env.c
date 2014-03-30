@@ -49,6 +49,10 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
                 env->x0 = buf_lin (b, env->x0, d / t, n);
                 env->t -= n;
 
+                size_t i;
+                for (i = n; i < delta; i++)
+                    b.xs[i] = env->x1;
+
                 if (env->t < 1)
                 {
                     env->mode = ENV_CONST;
