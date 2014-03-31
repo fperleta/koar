@@ -156,8 +156,10 @@ data Instr
     | I_moog_params Reg Double Double Double
 
     -- reverbs:
-    | I_reverb_make Reg Reg Reg Reg Reg Nat Nat
+    | I_reverb_make Reg Reg Reg Reg Reg Nat Nat Nat
     | I_reverb_early Reg Nat Nat Double Nat Double
+    | I_reverb_branch Reg Nat Nat Double Double Double Double
+    | I_reverb_feedback Reg Nat Double
 
   deriving (Eq, Show)
 
@@ -274,10 +276,13 @@ bInstr x = case x of
     I_moog_params r gain drive thermal
                                 -> bNat 129 <> bNat r <> bDbl gain <> bDbl drive <> bDbl thermal
 
-    I_reverb_make r i1 i2 o1 o2 elen ecount
-                                -> bNat 130 <> bNat r <> bNat i1 <> bNat i2 <> bNat o1 <> bNat o2 <> bNat elen <> bNat ecount
+    I_reverb_make r i1 i2 o1 o2 elen ecount nbr
+                                -> bNat 130 <> bNat r <> bNat i1 <> bNat i2 <> bNat o1 <> bNat o2 <> bNat elen <> bNat ecount <> bNat nbr
     I_reverb_early r idx o1 a1 o2 a2
                                 -> bNat 131 <> bNat r <> bNat idx <> bNat o1 <> bDbl a1 <> bNat o2 <> bDbl a2
+    I_reverb_branch r idx len lig rig log rog
+                                -> bNat 132 <> bNat r <> bNat idx <> bNat len <> bDbl lig <> bDbl rig <> bDbl log <> bDbl rog
+    I_reverb_feedback r idx fb  -> bNat 133 <> bNat r <> bNat idx <> bDbl fb
 
 -- }}}
 

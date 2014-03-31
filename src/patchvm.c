@@ -76,7 +76,7 @@ patchvm_leaving (patchvm_t vm)
 
 // opcodes {{{
 
-#define MAX_ARGTAGS 8
+#define MAX_ARGTAGS 16
 
 typedef struct {
     unsigned opc;
