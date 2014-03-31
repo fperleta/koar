@@ -513,15 +513,25 @@ reverbEarly rev idx offs1 amp1 offs2 amp2 = event $ do
     reg <- regE rev
     genE . emit $ I_reverb_early reg idx offs1 amp1 offs2 amp2
 
-reverbBranch :: Ref s Reverb -> Nat -> Nat -> Double -> Double -> Double -> Double -> Score s ()
-reverbBranch rev idx len lig rig log rog = event $ do
+reverbBranch :: Ref s Reverb -> Nat -> Nat -> Double -> Double -> Double -> Score s ()
+reverbBranch rev idx len apc dampG dampP = event $ do
     reg <- regE rev
-    genE . emit $ I_reverb_branch reg idx len lig rig log rog
+    genE . emit $ I_reverb_branch reg idx len apc dampG dampP
 
 reverbFeedback :: Ref s Reverb -> Nat -> Double -> Score s ()
 reverbFeedback rev idx fb = event $ do
     reg <- regE rev
     genE . emit $ I_reverb_feedback reg idx fb
+
+reverbGains :: Ref s Reverb -> Nat -> Double -> Double -> Double -> Double -> Score s ()
+reverbGains rev idx lig rig log rog = event $ do
+    reg <- regE rev
+    genE . emit $ I_reverb_gains reg idx lig rig log rog
+
+reverbTCFilter :: Ref s Reverb -> Double -> Score s ()
+reverbTCFilter rev beta = event $ do
+    reg <- regE rev
+    genE . emit $ I_reverb_tcfilter reg beta
 
 -- }}}
 

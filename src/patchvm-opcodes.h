@@ -516,7 +516,7 @@ END
 
 // }}}
 
-// (130 - 133) reverbs {{{
+// (130 - 135) reverbs {{{
 
 OPCODE (130, "reverb/make", reverb_make)
     ARG (A_ANYREG, "self")
@@ -542,16 +542,29 @@ OPCODE (132, "reverb/branch", reverb_branch)
     ARG (A_REG + T_REVERB, "self")
     ARG (A_NAT, "index")
     ARG (A_NAT, "len")
-    ARG (A_DOUBLE, "lig")
-    ARG (A_DOUBLE, "rig")
-    ARG (A_DOUBLE, "log")
-    ARG (A_DOUBLE, "rog")
+    ARG (A_DOUBLE, "apc")
+    ARG (A_DOUBLE, "damp_g")
+    ARG (A_DOUBLE, "damp_p")
 END
 
 OPCODE (133, "reverb/feedback", reverb_feedback)
     ARG (A_REG + T_REVERB, "self")
     ARG (A_NAT, "index")
     ARG (A_DOUBLE, "fb")
+END
+
+OPCODE (134, "reverb/gains", reverb_gains)
+    ARG (A_REG + T_REVERB, "self")
+    ARG (A_NAT, "index")
+    ARG (A_DOUBLE, "lig")
+    ARG (A_DOUBLE, "rig")
+    ARG (A_DOUBLE, "log")
+    ARG (A_DOUBLE, "rog")
+END
+
+OPCODE (135, "reverb/tcfilter", reverb_tcfilter)
+    ARG (A_REG + T_REVERB, "self")
+    ARG (A_DOUBLE, "beta")
 END
 
 // }}}

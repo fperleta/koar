@@ -20,7 +20,10 @@ typedef struct {
 typedef struct {
     size_t len, head;
     samp_t* xs;
+    samp_t apc; // allpass coefficient
     samp_t out;
+
+    samp_t damp_g, damp_p; // damping one-pole coeffs
 } branch_t;
 
 struct reverb_s {
@@ -41,6 +44,9 @@ struct reverb_s {
     samp_t* fdn_rigs; // right TDL gains
     samp_t* fdn_logs; // left output gains
     samp_t* fdn_rogs; // right output gains
+    // tonal correction filter
+    samp_t tc_beta;
+    samp_t tc_l, tc_r;
 };
 
 // }}}
@@ -96,14 +102,22 @@ reverb_loop (reverb_t rev, const samp_t* lxs, const samp_t* rxs,
                 continue;
             }
 
+            // accumulate the input into this branch.
             samp_t acc = early_l * rev->fdn_ligs[j] + early_r * rev->fdn_rigs[j];
             size_t k;
             for (k = 0; k < nbr; k++)
                 acc += rev->fdn_fbs[k] * rev->fdn_branch[(j + k) % nbr].out;
 
-            outs[j] = br->xs[br->head];
-            br->xs[br->head] = acc;
+            // update the delay line, schroeder allpass.
+            samp_t old = br->xs[br->head];
+            samp_t new = acc + br->apc * old;
+            samp_t out1 = old - br->apc * new;
+            br->xs[br->head] = new;
             br->head = (br->head + 1) % br->len;
+
+            // damping.
+            samp_t out2 = br->damp_g * out1 + br->damp_p * br->out;
+            outs[j] = out2;
         }
 
         // pull outputs from the FDN
@@ -116,9 +130,15 @@ reverb_loop (reverb_t rev, const samp_t* lxs, const samp_t* rxs,
             fdn_r += outs[j] * rev->fdn_rogs[j];
         }
 
-        // for now, just output the early reflections.
-        lys[i] = early_l + fdn_l;
-        rys[i] = early_r + fdn_r;
+        // tonal correction.
+        samp_t out_l = (fdn_l - rev->tc_beta * rev->tc_l) / (1 - rev->tc_beta);
+        samp_t out_r = (fdn_r - rev->tc_beta * rev->tc_r) / (1 - rev->tc_beta);
+        rev->tc_l = out_l;
+        rev->tc_r = out_r;
+
+        // final output = early reflections + late reflections
+        lys[i] = early_l + out_l;
+        rys[i] = early_r + out_r;
     }
     rev->tdl_head = hd;
 }
@@ -214,6 +234,9 @@ N_reverb_make (patch_t p, pnode_t src1, pnode_t src2, pnode_t snk1, pnode_t snk2
     rev->fdn_logs = rev->fdn_fbs + 3 * nbranches;
     rev->fdn_rogs = rev->fdn_fbs + 4 * nbranches;
 
+    rev->tc_beta = 0;
+    rev->tc_l = rev->tc_r = 0;
+
     size_t i;
     for (i = 0; i < 2 * tdl_len; i++)
         rev->tdl_ls[i] = 0;
@@ -230,7 +253,10 @@ N_reverb_make (patch_t p, pnode_t src1, pnode_t src2, pnode_t snk1, pnode_t snk2
         branch_t* br = rev->fdn_branch + i;
         br->len = br->head = 0;
         br->xs = NULL;
+        br->apc = 0;
         br->out = 0;
+        br->damp_g = 1;
+        br->damp_p = 0;
     }
 
     return an;
@@ -281,7 +307,7 @@ PATCHVM_reverb_early (patchvm_t vm, instr_t instr)
 // branch {{{
 
 void
-N_reverb_branch (anode_t an, size_t index, size_t len, samp_t lig, samp_t rig, samp_t log, samp_t rog)
+N_reverb_branch (anode_t an, size_t index, size_t len, samp_t apc, samp_t damp_g, samp_t damp_p)
 {
     reverb_t rev = anode_state (an);
     size_t i = index % rev->fdn_nbranches;
@@ -292,16 +318,14 @@ N_reverb_branch (anode_t an, size_t index, size_t len, samp_t lig, samp_t rig, s
     br->xs = xmalloc (sizeof (samp_t) * len);
     br->len = len;
     br->head = 0;
+    br->apc = apc;
     br->out = 0;
+    br->damp_g = damp_g;
+    br->damp_p = damp_p;
 
     size_t j;
     for (j = 0; j < len; j++)
         br->xs[j] = 0;
-
-    rev->fdn_ligs[i] = lig;
-    rev->fdn_rigs[i] = rig;
-    rev->fdn_logs[i] = log;
-    rev->fdn_rogs[i] = rog;
 }
 
 void
@@ -310,11 +334,10 @@ PATCHVM_reverb_branch (patchvm_t vm, instr_t instr)
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
     size_t index = instr->args[1].nat;
     size_t len = instr->args[2].nat;
-    samp_t lig = instr->args[3].dbl;
-    samp_t rig = instr->args[4].dbl;
-    samp_t log = instr->args[5].dbl;
-    samp_t rog = instr->args[6].dbl;
-    N_reverb_branch (an, index, len, lig, rig, log, rog);
+    samp_t apc = instr->args[3].dbl;
+    samp_t damp_g = instr->args[4].dbl;
+    samp_t damp_p = instr->args[5].dbl;
+    N_reverb_branch (an, index, len, apc, damp_g, damp_p);
 }
 
 // }}}
@@ -336,6 +359,53 @@ PATCHVM_reverb_feedback (patchvm_t vm, instr_t instr)
     size_t index = instr->args[1].nat;
     samp_t fb = instr->args[2].dbl;
     N_reverb_feedback (an, index, fb);
+}
+
+// }}}
+
+// gains {{{
+
+void
+N_reverb_gains (anode_t an, size_t index, samp_t lig, samp_t rig, samp_t log, samp_t rog)
+{
+    reverb_t rev = anode_state (an);
+    size_t i = index % rev->fdn_nbranches;
+
+    rev->fdn_ligs[i] = lig;
+    rev->fdn_rigs[i] = rig;
+    rev->fdn_logs[i] = log;
+    rev->fdn_rogs[i] = rog;
+}
+
+void
+PATCHVM_reverb_gains (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    size_t index = instr->args[1].nat;
+    samp_t lig = instr->args[2].dbl;
+    samp_t rig = instr->args[3].dbl;
+    samp_t log = instr->args[4].dbl;
+    samp_t rog = instr->args[5].dbl;
+    N_reverb_branch (an, index, lig, rig, log, rog);
+}
+
+// }}}
+
+// tcfilter {{{
+
+void
+N_reverb_tcfilter (anode_t an, samp_t beta)
+{
+    reverb_t rev = anode_state (an);
+    rev->tc_beta = beta;
+}
+
+void
+PATCHVM_reverb_tcfilter (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    samp_t beta = instr->args[1].dbl;
+    N_reverb_tcfilter (an, beta);
 }
 
 // }}}
