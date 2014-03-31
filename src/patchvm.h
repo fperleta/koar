@@ -35,6 +35,7 @@ typedef enum {
     T_RESON,
     T_TANH,
     T_MOOG,
+    T_REVERB,
 
     NUM_REGTAGS
 } regtag_t;

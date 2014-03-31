@@ -439,7 +439,8 @@ static const char* regtag_strings[] = {
     "blit",
     "reson",
     "tanh",
-    "moog"
+    "moog",
+    "reverb"
 };
 
 #if 0

@@ -516,4 +516,27 @@ END
 
 // }}}
 
+// (130 - 131) reverbs {{{
+
+OPCODE (130, "reverb/make", reverb_make)
+    ARG (A_ANYREG, "self")
+    ARG (A_REG + T_PNODE, "src1")
+    ARG (A_REG + T_PNODE, "src2")
+    ARG (A_REG + T_PNODE, "snk1")
+    ARG (A_REG + T_PNODE, "snk2")
+    ARG (A_NAT, "early_len")
+    ARG (A_NAT, "early_count")
+END
+
+OPCODE (131, "reverb/early", reverb_early)
+    ARG (A_REG + T_REVERB, "self")
+    ARG (A_NAT, "index")
+    ARG (A_NAT, "offs1")
+    ARG (A_DOUBLE, "amp1")
+    ARG (A_NAT, "offs2")
+    ARG (A_DOUBLE, "amp2")
+END
+
+// }}}
+
 // vim:fdm=marker:

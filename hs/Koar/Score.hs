@@ -180,6 +180,7 @@ data Kind
     | Reson
     | Tanh
     | Moog
+    | Reverb
 
 -- }}}
 
@@ -204,6 +205,7 @@ data Tag :: Kind -> * where
     TagReson :: Tag Reson
     TagTanh :: Tag Tanh
     TagMoog :: Tag Moog
+    TagReverb :: Tag Reverb
 
 -- }}}
 
@@ -228,10 +230,11 @@ data TagProd a = TagProd
     , tpReson :: a
     , tpTanh :: a
     , tpMoog :: a
+    , tpReverb :: a
     }
 
 diagTP :: a -> TagProd a
-diagTP x = TagProd x x x x x x x x x x x x x x x x x x
+diagTP x = TagProd x x x x x x x x x x x x x x x x x x x
 
 mapTP :: (forall k. (IsKind k) => Tag k -> a -> b) -> TagProd a -> [b]
 mapTP f tp =
@@ -253,6 +256,7 @@ mapTP f tp =
     , f TagReson $ tpReson tp
     , f TagTanh $ tpTanh tp
     , f TagMoog $ tpMoog tp
+    , f TagReverb $ tpReverb tp
     ]
 
 -- }}}
@@ -361,6 +365,11 @@ instance IsKind Moog where
     kindTag = TagMoog
     getTP _ = tpMoog
     setTP _ x tp = tp { tpMoog = x }
+
+instance IsKind Reverb where
+    kindTag = TagReverb
+    getTP _ = tpReverb
+    setTP _ x tp = tp { tpReverb = x }
 
 -- }}}
 

@@ -493,4 +493,26 @@ moogParams moog gain drive thermal = event $ do
 
 -- }}}
 
+-- reverb {{{
+
+reverbMake :: Ref s P -> Ref s P -> Ref s P -> Ref s P -> Nat -> Nat -> Score s (Ref s Reverb)
+reverbMake i1 i2 o1 o2 elen ecount = do
+    r <- freshRef TagReverb
+    fr <- here
+    event $ do
+        reg <- newE r fr
+        regI1 <- regE i1
+        regI2 <- regE i2
+        regO1 <- regE o1
+        regO2 <- regE o2
+        genE . emit $ I_reverb_make reg regI1 regI2 regO1 regO2 elen ecount
+    return r
+
+reverbEarly :: Ref s Reverb -> Nat -> Nat -> Double -> Nat -> Double -> Score s ()
+reverbEarly rev idx offs1 amp1 offs2 amp2 = event $ do
+    reg <- regE rev
+    genE . emit $ I_reverb_early reg idx offs1 amp1 offs2 amp2
+
+-- }}}
+
 -- vim:fdm=marker:
