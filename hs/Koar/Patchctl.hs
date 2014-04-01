@@ -157,10 +157,9 @@ data Instr
 
     -- reverbs:
     | I_reverb_make Reg Reg Reg Reg Reg Nat Nat Nat
-    | I_reverb_early Reg Nat Nat Double Nat Double
-    | I_reverb_branch Reg Nat Nat Double Double Double
-    | I_reverb_feedback Reg Nat Double
-    | I_reverb_gains Reg Nat Double Double Double Double
+    | I_reverb_internal Reg Nat Nat Nat Double Double
+    | I_reverb_sources Reg Nat Nat Double Double Nat Double Double
+    | I_reverb_sinks Reg Nat Nat Double Double Nat Double Double
     | I_reverb_tcfilter Reg Double
 
   deriving (Eq, Show)
@@ -280,14 +279,13 @@ bInstr x = case x of
 
     I_reverb_make r i1 i2 o1 o2 elen ecount nbr
                                 -> bNat 130 <> bNat r <> bNat i1 <> bNat i2 <> bNat o1 <> bNat o2 <> bNat elen <> bNat ecount <> bNat nbr
-    I_reverb_early r idx o1 a1 o2 a2
-                                -> bNat 131 <> bNat r <> bNat idx <> bNat o1 <> bDbl a1 <> bNat o2 <> bDbl a2
-    I_reverb_branch r idx len apc dampG dampP
-                                -> bNat 132 <> bNat r <> bNat idx <> bNat len <> bDbl apc <> bDbl dampG <> bDbl dampP
-    I_reverb_feedback r idx fb  -> bNat 133 <> bNat r <> bNat idx <> bDbl fb
-    I_reverb_gains r idx lig rig log rog
-                                -> bNat 134 <> bNat r <> bNat idx <> bDbl lig <> bDbl rig <> bDbl log <> bDbl rog
-    I_reverb_tcfilter r beta    -> bNat 135 <> bNat r <> bDbl beta
+    I_reverb_internal r w1 w2 offs g p
+                                -> bNat 131 <> bNat r <> bNat w1 <> bNat w2 <> bNat offs <> bDbl g <> bDbl p
+    I_reverb_sources r w loffs lg lp roffs rg rp
+                                -> bNat 132 <> bNat r <> bNat w <> bNat loffs <> bDbl lg <> bDbl lp <> bNat roffs <> bDbl rg <> bDbl rp
+    I_reverb_sinks r w loffs lg lp roffs rg rp
+                                -> bNat 133 <> bNat r <> bNat w <> bNat loffs <> bDbl lg <> bDbl lp <> bNat roffs <> bDbl rg <> bDbl rp
+    I_reverb_tcfilter r beta    -> bNat 134 <> bNat r <> bDbl beta
 
 -- }}}
 

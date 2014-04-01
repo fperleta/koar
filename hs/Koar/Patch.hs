@@ -496,7 +496,7 @@ moogParams moog gain drive thermal = event $ do
 -- reverb {{{
 
 reverbMake :: Ref s P -> Ref s P -> Ref s P -> Ref s P -> Nat -> Nat -> Nat -> Score s (Ref s Reverb)
-reverbMake i1 i2 o1 o2 elen ecount nbr = do
+reverbMake i1 i2 o1 o2 nwalls wlen slen = do
     r <- freshRef TagReverb
     fr <- here
     event $ do
@@ -505,28 +505,23 @@ reverbMake i1 i2 o1 o2 elen ecount nbr = do
         regI2 <- regE i2
         regO1 <- regE o1
         regO2 <- regE o2
-        genE . emit $ I_reverb_make reg regI1 regI2 regO1 regO2 elen ecount nbr
+        genE . emit $ I_reverb_make reg regI1 regI2 regO1 regO2 nwalls wlen slen
     return r
 
-reverbEarly :: Ref s Reverb -> Nat -> Nat -> Double -> Nat -> Double -> Score s ()
-reverbEarly rev idx offs1 amp1 offs2 amp2 = event $ do
+reverbInternal :: Ref s Reverb -> Nat -> Nat -> Nat -> Double -> Double -> Score s ()
+reverbInternal rev w1 w2 offs g p = event $ do
     reg <- regE rev
-    genE . emit $ I_reverb_early reg idx offs1 amp1 offs2 amp2
+    genE . emit $ I_reverb_internal reg w1 w2 offs g p
 
-reverbBranch :: Ref s Reverb -> Nat -> Nat -> Double -> Double -> Double -> Score s ()
-reverbBranch rev idx len apc dampG dampP = event $ do
+reverbSources :: Ref s Reverb -> Nat -> Nat -> Double -> Double -> Nat -> Double -> Double -> Score s ()
+reverbSources rev w loffs lg lp roffs rg rp = event $ do
     reg <- regE rev
-    genE . emit $ I_reverb_branch reg idx len apc dampG dampP
+    genE . emit $ I_reverb_sources reg w loffs lg lp roffs rg rp
 
-reverbFeedback :: Ref s Reverb -> Nat -> Double -> Score s ()
-reverbFeedback rev idx fb = event $ do
+reverbSinks :: Ref s Reverb -> Nat -> Nat -> Double -> Double -> Nat -> Double -> Double -> Score s ()
+reverbSinks rev w loffs lg lp roffs rg rp = event $ do
     reg <- regE rev
-    genE . emit $ I_reverb_feedback reg idx fb
-
-reverbGains :: Ref s Reverb -> Nat -> Double -> Double -> Double -> Double -> Score s ()
-reverbGains rev idx lig rig log rog = event $ do
-    reg <- regE rev
-    genE . emit $ I_reverb_gains reg idx lig rig log rog
+    genE . emit $ I_reverb_sinks reg w loffs lg lp roffs rg rp
 
 reverbTCFilter :: Ref s Reverb -> Double -> Score s ()
 reverbTCFilter rev beta = event $ do

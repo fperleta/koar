@@ -13,134 +13,112 @@
 typedef struct reverb_s* reverb_t;
 
 typedef struct {
-    size_t offs;
-    samp_t amp;
-} tap_t;
+    samp_t* xs;
+} dline_t;
 
 typedef struct {
-    size_t len, head;
-    samp_t* xs;
-    samp_t apc; // allpass coefficient
-    samp_t out;
+    size_t offs;
 
-    samp_t damp_g, damp_p; // damping one-pole coeffs
-} branch_t;
+    samp_t g, p; // one-pole coeffs
+
+    samp_t z_1; // previous outputs
+} dtap_t;
 
 struct reverb_s {
-    // tapped delay lines
-    size_t tdl_len;
-    size_t tdl_head;
-    samp_t* tdl_ls; // these two are allocated in the same block.
-    samp_t* tdl_rs;
-    // ... the taps
-    size_t tdl_ntaps;
-    tap_t* tdl_ltap; // so are these.
-    tap_t* tdl_rtap;
-    // feedback delay network
-    size_t fdn_nbranches;
-    branch_t* fdn_branch;
-    samp_t* fdn_fbs; // feedbacks -- all of these are in the same block:
-    samp_t* fdn_ligs; // left TDL gains
-    samp_t* fdn_rigs; // right TDL gains
-    samp_t* fdn_logs; // left output gains
-    samp_t* fdn_rogs; // right output gains
-    // tonal correction filter
+    size_t nwalls;
+
+    // delay lines:
+    size_t wall_len, wall_head;
+    size_t sink_len, sink_head;
+    samp_t* samps_buf;
+    dline_t* lines_buf;
+    dline_t* walls;
+    dline_t* lsink;
+    dline_t* rsink;
+
+    // dtaps:
+    dtap_t* taps_buf;
+    dtap_t* litaps; // nwalls
+    dtap_t* ritaps;
+    dtap_t* lotaps;
+    dtap_t* rotaps;
+    dtap_t* wwtaps; // nwalls*nwalls
+
+    // tonal correction filter:
     samp_t tc_beta;
-    samp_t tc_l, tc_r;
+    samp_t tc_lz_1, tc_rz_1; // previous outputs
 };
 
 // }}}
 
 // processing loop {{{
 
-static samp_t __attribute__ ((hot))
-tdl_sum (reverb_t rev, samp_t* xs, size_t hd, tap_t* ts)
+MACRO void __attribute__ ((hot))
+dtap_write (dtap_t* tap, samp_t* xs, size_t hd, size_t len, samp_t x)
 {
-    size_t i;
-    samp_t acc = 0;
-
-    size_t len = rev->tdl_len;
-    for (i = 0; i < rev->tdl_ntaps; i++)
-        if (ts[i].amp != 0)
-        {
-            size_t j = (len + hd - (ts[i].offs % len)) % len;
-            acc += xs[j];
-        }
-
-    return acc;
+    samp_t y = tap->g * x + tap->p * tap->z_1;
+    tap->z_1 = y;
+    xs[(hd + tap->offs) % len] += y;
 }
 
 static void
 reverb_loop (reverb_t rev, const samp_t* lxs, const samp_t* rxs,
              samp_t* lys, samp_t* rys, size_t len)
 {
-    size_t i, j;
-    size_t nbr = rev->fdn_nbranches;
+    size_t i, j, k;
 
-    size_t hd = rev->tdl_head;
+    const size_t nwalls = rev->nwalls;
+    const size_t wlen = rev->wall_len, slen = rev->sink_len;
+
+    size_t whd = rev->wall_head, shd = rev->sink_head;
     for (i = 0; i < len; i++)
     {
-        // push the inputs into the TDL.
-        rev->tdl_ls[hd] = lxs[i];
-        rev->tdl_rs[hd] = rxs[i];
+        samp_t lx = lxs[i];
+        samp_t rx = rxs[i];
 
-        // early reflections.
-        samp_t early_l = tdl_sum (rev, rev->tdl_ls, hd, rev->tdl_ltap);
-        samp_t early_r = tdl_sum (rev, rev->tdl_rs, hd, rev->tdl_rtap);
-
-        // advance the TDL head.
-        hd = (hd + 1) % rev->tdl_len;
-
-        // push inputs into the FDN
-        samp_t outs[nbr];
-        for (j = 0; j < nbr; j++)
+        // sources to walls
+        for (j = 0; j < nwalls; j++)
         {
-            branch_t* br = rev->fdn_branch + j;
-            if (!(br->len))
-            {
-                outs[j] = 0;
-                continue;
-            }
-
-            // accumulate the input into this branch.
-            samp_t acc = early_l * rev->fdn_ligs[j] + early_r * rev->fdn_rigs[j];
-            size_t k;
-            for (k = 0; k < nbr; k++)
-                acc += rev->fdn_fbs[k] * rev->fdn_branch[(j + k) % nbr].out;
-
-            // update the delay line, schroeder allpass.
-            samp_t old = br->xs[br->head];
-            samp_t new = acc + br->apc * old;
-            samp_t out1 = old - br->apc * new;
-            br->xs[br->head] = new;
-            br->head = (br->head + 1) % br->len;
-
-            // damping.
-            samp_t out2 = br->damp_g * out1 + br->damp_p * br->out;
-            outs[j] = out2;
+            dtap_write (rev->litaps + j, rev->walls[j].xs, whd, wlen, lx);
+            dtap_write (rev->ritaps + j, rev->walls[j].xs, whd, wlen, rx);
         }
 
-        // pull outputs from the FDN
-        samp_t fdn_l = 0, fdn_r = 0;
-        for (j = 0; j < nbr; j++)
+        // walls to walls and sinks
+        for (j = 0; j < nwalls; j++)
         {
-            branch_t* br = rev->fdn_branch + j;
-            br->out = outs[j];
-            fdn_l += outs[j] * rev->fdn_logs[j];
-            fdn_r += outs[j] * rev->fdn_rogs[j];
+            samp_t wx = -rev->walls[j].xs[whd];
+            rev->walls[j].xs[whd] = 0;
+
+            for (k = 0; k < j; k++)
+                dtap_write (rev->wwtaps + j * nwalls + k, rev->walls[k].xs, whd, wlen, wx);
+            for (++k; k < nwalls; k++)
+                dtap_write (rev->wwtaps + j * nwalls + k, rev->walls[k].xs, whd, wlen, wx);
+
+            dtap_write (rev->lotaps + j, rev->lsink->xs, shd, slen, wx);
+            dtap_write (rev->rotaps + j, rev->rsink->xs, shd, slen, wx);
         }
 
-        // tonal correction.
-        samp_t out_l = (fdn_l - rev->tc_beta * rev->tc_l) / (1 - rev->tc_beta);
-        samp_t out_r = (fdn_r - rev->tc_beta * rev->tc_r) / (1 - rev->tc_beta);
-        rev->tc_l = out_l;
-        rev->tc_r = out_r;
+        // outputs
+        samp_t lo = rev->lsink->xs[shd];
+        samp_t ro = rev->rsink->xs[shd];
+        rev->lsink->xs[shd] = 0;
+        rev->rsink->xs[shd] = 0;
 
-        // final output = early reflections + late reflections
-        lys[i] = early_l + out_l;
-        rys[i] = early_r + out_r;
+        // tonal correction
+        samp_t ly = (lo - rev->tc_beta * rev->tc_lz_1) / (1 - rev->tc_beta);
+        samp_t ry = (ro - rev->tc_beta * rev->tc_rz_1) / (1 - rev->tc_beta);
+        rev->tc_lz_1 = ly;
+        rev->tc_rz_1 = ry;
+
+        // step forward
+        whd = (whd + 1) % wlen;
+        shd = (shd + 1) % slen;
+
+        lys[i] = ly;
+        rys[i] = ry;
     }
-    rev->tdl_head = hd;
+    rev->wall_head = whd;
+    rev->sink_head = shd;
 }
 
 // }}}
@@ -152,18 +130,17 @@ reverb_exit (anode_t an)
 {
     reverb_t rev = anode_state (an);
 
-    if (rev->tdl_ls)
-        free (rev->tdl_ls);
-    rev->tdl_ls = rev->tdl_rs = NULL;
+    if (rev->samps_buf)
+        free (rev->samps_buf);
+    rev->samps_buf = NULL;
 
-    if (rev->tdl_ntaps)
-        free (rev->tdl_ltap);
-    rev->tdl_ltap = rev->tdl_rtap = NULL;
+    if (rev->lines_buf)
+        free (rev->lines_buf);
+    rev->lines_buf = NULL;
 
-    if (rev->fdn_fbs)
-        free (rev->fdn_fbs);
-    rev->fdn_fbs = rev->fdn_ligs = rev->fdn_rigs = NULL;
-    rev->fdn_logs = rev->fdn_rogs = NULL;
+    if (rev->taps_buf)
+        free (rev->taps_buf);
+    rev->taps_buf = NULL;
 }
 
 static void
@@ -209,7 +186,7 @@ reverb_ainfo = {
 
 anode_t
 N_reverb_make (patch_t p, pnode_t src1, pnode_t src2, pnode_t snk1, pnode_t snk2,
-               size_t tdl_len, size_t tdl_ntaps, size_t nbranches)
+               size_t nwalls, size_t wall_len, size_t sink_len)
 {
     anode_t an = anode_create (p, &reverb_ainfo);
     anode_source (an, 0, src1);
@@ -218,46 +195,63 @@ N_reverb_make (patch_t p, pnode_t src1, pnode_t src2, pnode_t snk1, pnode_t snk2
     anode_sink (an, 1, snk2);
 
     reverb_t rev = anode_state (an);
-    rev->tdl_len = tdl_len;
-    rev->tdl_head = 0;
-    rev->tdl_ls = xmalloc (sizeof (samp_t) * 2 * tdl_len);
-    rev->tdl_rs = rev->tdl_ls + tdl_len;
-    rev->tdl_ntaps = tdl_ntaps;
-    rev->tdl_ltap = xmalloc (sizeof (tap_t) * 2 * tdl_ntaps);
-    rev->tdl_rtap = rev->tdl_ltap + tdl_ntaps;
 
-    rev->fdn_nbranches = nbranches;
-    rev->fdn_branch = xmalloc (sizeof (branch_t) * nbranches);
-    rev->fdn_fbs = xmalloc (sizeof (samp_t) * 5 * nbranches);
-    rev->fdn_ligs = rev->fdn_fbs + nbranches;
-    rev->fdn_rigs = rev->fdn_fbs + 2 * nbranches;
-    rev->fdn_logs = rev->fdn_fbs + 3 * nbranches;
-    rev->fdn_rogs = rev->fdn_fbs + 4 * nbranches;
+    rev->nwalls = nwalls;
 
-    rev->tc_beta = 0;
-    rev->tc_l = rev->tc_r = 0;
+    do { // delay lines {{{
+        rev->wall_len = wall_len; rev->wall_head = 0;
+        rev->sink_len = sink_len; rev->sink_head = 0;
 
-    size_t i;
-    for (i = 0; i < 2 * tdl_len; i++)
-        rev->tdl_ls[i] = 0;
-    for (i = 0; i < 2 * tdl_ntaps; i++)
-        rev->tdl_ltap[i] = (tap_t) { .offs = 0, .amp = 0 };
-    for (i = 0; i < nbranches; i++)
-    {
-        samp_t inbr = 1 / (samp_t) nbranches;
-        rev->fdn_fbs[i] = inbr;
-        rev->fdn_ligs[i] = inbr;
-        rev->fdn_rigs[i] = inbr;
-        rev->fdn_logs[i] = inbr;
-        rev->fdn_rogs[i] = inbr;
-        branch_t* br = rev->fdn_branch + i;
-        br->len = br->head = 0;
-        br->xs = NULL;
-        br->apc = 0;
-        br->out = 0;
-        br->damp_g = 1;
-        br->damp_p = 0;
-    }
+        size_t nsamps = nwalls * wall_len + 2 * sink_len;
+        samp_t* buf = rev->samps_buf = xmalloc (sizeof (samp_t) * nsamps);
+
+        size_t i;
+        for (i = 0; i < nsamps; i++)
+            buf[i] = 0;
+
+        dline_t* ls = xmalloc (sizeof (dline_t) * (nwalls + 2));
+        rev->lines_buf = rev->walls = ls;
+        rev->lsink = ls + nwalls;
+        rev->rsink = ls + nwalls + 1;
+
+        size_t j;
+        for (j = 0; j < nwalls; j++)
+        {
+            dline_t* dl = ls + j;
+            dl->xs = buf;
+            buf += wall_len;
+        }
+        rev->lsink->xs = buf;
+        rev->rsink->xs = buf + sink_len;
+    } while (0); // }}}
+
+    do { // taps {{{
+        size_t ntaps = (4 + nwalls) * nwalls;
+        dtap_t* buf = xmalloc (sizeof (dtap_t) * ntaps);
+
+        rev->taps_buf = buf;
+        rev->litaps = buf;
+        rev->ritaps = buf + 1 * nwalls;
+        rev->lotaps = buf + 2 * nwalls;
+        rev->rotaps = buf + 3 * nwalls;
+        rev->wwtaps = buf + 4 * nwalls;
+
+        size_t i;
+        for (i = 0; i < ntaps; i++)
+        {
+            dtap_t* tap = buf + i;
+            tap->offs = 0;
+            tap->g = 1;
+            tap->p = 0;
+            tap->z_1 = 0;
+        }
+    } while (0); // }}}
+
+    do { // tonal correction filter {{{
+        rev->tc_beta = 0;
+        rev->tc_lz_1 = 0;
+        rev->tc_rz_1 = 0;
+    } while (0); // }}}
 
     return an;
 }
@@ -270,123 +264,106 @@ PATCHVM_reverb_make (patchvm_t vm, instr_t instr)
     pnode_t src2 = patchvm_get (vm, instr->args[2].reg).pn;
     pnode_t snk1 = patchvm_get (vm, instr->args[3].reg).pn;
     pnode_t snk2 = patchvm_get (vm, instr->args[4].reg).pn;
-    size_t early_len = instr->args[5].nat;
-    size_t early_count = instr->args[6].nat;
-    size_t branches = instr->args[7].nat;
-    reg_t val = { .tag = T_REVERB, .an = N_reverb_make (p, src1, src2, snk1, snk2, early_len, early_count, branches) };
+    size_t nwalls = instr->args[5].nat;
+    size_t wall_len = instr->args[6].nat;
+    size_t sink_len = instr->args[7].nat;
+    reg_t val = { .tag = T_REVERB, .an = N_reverb_make (p, src1, src2, snk1, snk2, nwalls, wall_len, sink_len) };
     patchvm_set (vm, instr->args[0].reg, val);
 }
 
 // }}}
 
-// early {{{
+// internal {{{
 
 void
-N_reverb_early (anode_t an, size_t index, size_t offs1, samp_t amp1, size_t offs2, samp_t amp2)
+N_reverb_internal (anode_t an, size_t w1, size_t w2, size_t offs,
+                   samp_t g, samp_t p)
 {
     reverb_t rev = anode_state (an);
-    size_t i = index % rev->tdl_ntaps;
-    rev->tdl_ltap[i] = (tap_t) { .offs = offs1, .amp = amp1 };
-    rev->tdl_rtap[i] = (tap_t) { .offs = offs2, .amp = amp2 };
+    size_t i1 = w1 % rev->nwalls;
+    size_t i2 = w2 % rev->nwalls;
+    dtap_t* t = rev->wwtaps + i1 * rev->nwalls + i2;
+    t->offs = offs; t->g = g; t->p = p;
 }
 
 void
-PATCHVM_reverb_early (patchvm_t vm, instr_t instr)
+PATCHVM_reverb_internal (patchvm_t vm, instr_t instr)
 {
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
-    size_t index = instr->args[1].nat;
-    size_t offs1 = instr->args[2].nat;
-    samp_t amp1 = instr->args[3].nat;
-    size_t offs2 = instr->args[4].nat;
-    samp_t amp2 = instr->args[5].nat;
-    N_reverb_early (an, index, offs1, amp1, offs2, amp2);
+    size_t w1 = instr->args[1].nat;
+    size_t w2 = instr->args[2].nat;
+    size_t offs = instr->args[3].nat;
+    samp_t g = instr->args[4].dbl;
+    samp_t p = instr->args[5].dbl;
+    N_reverb_internal (an, w1, w2, offs, g, p);
 }
 
 // }}}
 
-// branch {{{
+// sources {{{
 
 void
-N_reverb_branch (anode_t an, size_t index, size_t len, samp_t apc, samp_t damp_g, samp_t damp_p)
+N_reverb_sources (anode_t an, size_t w,
+                  size_t loffs, samp_t lg, samp_t lp,
+                  size_t roffs, samp_t rg, samp_t rp)
 {
     reverb_t rev = anode_state (an);
-    size_t i = index % rev->fdn_nbranches;
-    branch_t* br = rev->fdn_branch + i;
+    size_t i = w % rev->nwalls;
+    dtap_t* t;
 
-    if (br->xs)
-        free (br->xs);
-    br->xs = xmalloc (sizeof (samp_t) * len);
-    br->len = len;
-    br->head = 0;
-    br->apc = apc;
-    br->out = 0;
-    br->damp_g = damp_g;
-    br->damp_p = damp_p;
+    t = rev->litaps + i;
+    t->offs = loffs; t->g = lg; t->p = lp;
 
-    size_t j;
-    for (j = 0; j < len; j++)
-        br->xs[j] = 0;
+    t = rev->ritaps + i;
+    t->offs = roffs; t->g = rg; t->p = rp;
 }
 
 void
-PATCHVM_reverb_branch (patchvm_t vm, instr_t instr)
+PATCHVM_reverb_sources (patchvm_t vm, instr_t instr)
 {
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
-    size_t index = instr->args[1].nat;
-    size_t len = instr->args[2].nat;
-    samp_t apc = instr->args[3].dbl;
-    samp_t damp_g = instr->args[4].dbl;
-    samp_t damp_p = instr->args[5].dbl;
-    N_reverb_branch (an, index, len, apc, damp_g, damp_p);
+    size_t w = instr->args[1].nat;
+    size_t loffs = instr->args[2].nat;
+    samp_t lg = instr->args[3].dbl;
+    samp_t lp = instr->args[4].dbl;
+    size_t roffs = instr->args[5].nat;
+    samp_t rg = instr->args[6].dbl;
+    samp_t rp = instr->args[7].dbl;
+    N_reverb_sources (an, w, loffs, lg, lp, roffs, rg, rp);
 }
 
 // }}}
 
-// feedback {{{
+// sinks {{{
 
 void
-N_reverb_feedback (anode_t an, size_t index, samp_t fb)
+N_reverb_sinks (anode_t an, size_t w,
+                size_t loffs, samp_t lg, samp_t lp,
+                size_t roffs, samp_t rg, samp_t rp)
 {
     reverb_t rev = anode_state (an);
-    size_t i = index % rev->fdn_nbranches;
-    rev->fdn_fbs[i] = fb;
+    size_t i = w % rev->nwalls;
+    dtap_t* t;
+
+    t = rev->lotaps + i;
+    t->offs = loffs; t->g = lg; t->p = lp;
+
+    t = rev->rotaps + i;
+    t->offs = roffs; t->g = rg; t->p = rp;
 }
 
 void
-PATCHVM_reverb_feedback (patchvm_t vm, instr_t instr)
+PATCHVM_reverb_sinks (patchvm_t vm, instr_t instr)
 {
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
-    size_t index = instr->args[1].nat;
-    samp_t fb = instr->args[2].dbl;
-    N_reverb_feedback (an, index, fb);
-}
-
-// }}}
-
-// gains {{{
-
-void
-N_reverb_gains (anode_t an, size_t index, samp_t lig, samp_t rig, samp_t log, samp_t rog)
-{
-    reverb_t rev = anode_state (an);
-    size_t i = index % rev->fdn_nbranches;
-
-    rev->fdn_ligs[i] = lig;
-    rev->fdn_rigs[i] = rig;
-    rev->fdn_logs[i] = log;
-    rev->fdn_rogs[i] = rog;
-}
-
-void
-PATCHVM_reverb_gains (patchvm_t vm, instr_t instr)
-{
-    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
-    size_t index = instr->args[1].nat;
-    samp_t lig = instr->args[2].dbl;
-    samp_t rig = instr->args[3].dbl;
-    samp_t log = instr->args[4].dbl;
-    samp_t rog = instr->args[5].dbl;
-    N_reverb_branch (an, index, lig, rig, log, rog);
+    size_t w = instr->args[1].nat;
+    size_t loffs = instr->args[2].nat;
+    samp_t lg = instr->args[3].dbl;
+    samp_t lp = instr->args[4].dbl;
+    size_t roffs = instr->args[5].nat;
+    samp_t rg = instr->args[6].dbl;
+    samp_t rp = instr->args[7].dbl;
+    N_reverb_sinks (an, w, loffs, lg, lp, roffs, rg, rp);
 }
 
 // }}}

@@ -524,48 +524,48 @@ OPCODE (130, "reverb/make", reverb_make)
     ARG (A_REG + T_PNODE, "src2")
     ARG (A_REG + T_PNODE, "snk1")
     ARG (A_REG + T_PNODE, "snk2")
-    ARG (A_NAT, "early_len")
-    ARG (A_NAT, "early_count")
-    ARG (A_NAT, "branches")
+    ARG (A_NAT, "nwalls")
+    ARG (A_NAT, "wall_len")
+    ARG (A_NAT, "sink_len")
 END
 
-OPCODE (131, "reverb/early", reverb_early)
+OPCODE (131, "reverb/internal", reverb_internal)
     ARG (A_REG + T_REVERB, "self")
-    ARG (A_NAT, "index")
-    ARG (A_NAT, "offs1")
-    ARG (A_DOUBLE, "amp1")
-    ARG (A_NAT, "offs2")
-    ARG (A_DOUBLE, "amp2")
+    ARG (A_NAT, "w1")
+    ARG (A_NAT, "w2")
+    ARG (A_NAT, "offs")
+    ARG (A_DOUBLE, "g")
+    ARG (A_DOUBLE, "p")
 END
 
-OPCODE (132, "reverb/branch", reverb_branch)
+OPCODE (132, "reverb/sources", reverb_sources)
     ARG (A_REG + T_REVERB, "self")
-    ARG (A_NAT, "index")
-    ARG (A_NAT, "len")
-    ARG (A_DOUBLE, "apc")
-    ARG (A_DOUBLE, "damp_g")
-    ARG (A_DOUBLE, "damp_p")
+    ARG (A_NAT, "w")
+    ARG (A_NAT, "loffs")
+    ARG (A_DOUBLE, "lg")
+    ARG (A_DOUBLE, "lp")
+    ARG (A_NAT, "roffs")
+    ARG (A_DOUBLE, "rg")
+    ARG (A_DOUBLE, "rp")
 END
 
-OPCODE (133, "reverb/feedback", reverb_feedback)
+OPCODE (133, "reverb/sinks", reverb_sinks)
     ARG (A_REG + T_REVERB, "self")
-    ARG (A_NAT, "index")
-    ARG (A_DOUBLE, "fb")
+    ARG (A_NAT, "w")
+    ARG (A_NAT, "loffs")
+    ARG (A_DOUBLE, "lg")
+    ARG (A_DOUBLE, "lp")
+    ARG (A_NAT, "roffs")
+    ARG (A_DOUBLE, "rg")
+    ARG (A_DOUBLE, "rp")
 END
 
-OPCODE (134, "reverb/gains", reverb_gains)
-    ARG (A_REG + T_REVERB, "self")
-    ARG (A_NAT, "index")
-    ARG (A_DOUBLE, "lig")
-    ARG (A_DOUBLE, "rig")
-    ARG (A_DOUBLE, "log")
-    ARG (A_DOUBLE, "rog")
-END
-
-OPCODE (135, "reverb/tcfilter", reverb_tcfilter)
+OPCODE (134, "reverb/tcfilter", reverb_tcfilter)
     ARG (A_REG + T_REVERB, "self")
     ARG (A_DOUBLE, "beta")
 END
+
+RESERVED (135)
 
 // }}}
 

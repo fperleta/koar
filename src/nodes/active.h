@@ -108,10 +108,9 @@ extern void N_reson_lowpass (anode_t, samp_t);
 // reverbs {{{
 
 extern anode_t N_reverb_make (patch_t, pnode_t, pnode_t, pnode_t, pnode_t, size_t, size_t, size_t);
-extern void N_reverb_early (anode_t, size_t, size_t, samp_t, size_t, samp_t);
-extern void N_reverb_branch (anode_t, size_t, size_t, samp_t, samp_t, samp_t);
-extern void N_reverb_feedback (anode_t, size_t, samp_t);
-extern void N_reverb_gains (anode_t, size_t, samp_t, samp_t, samp_t, samp_t);
+extern void N_reverb_internal (anode_t, size_t, size_t, size_t, samp_t, samp_t);
+extern void N_reverb_sources (anode_t, size_t, size_t, samp_t, samp_t, size_t, samp_t, samp_t);
+extern void N_reverb_sinks (anode_t, size_t, size_t, samp_t, samp_t, size_t, samp_t, samp_t);
 extern void N_reverb_tcfilter (anode_t, samp_t);
 
 // }}}
