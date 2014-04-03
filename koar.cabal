@@ -15,6 +15,7 @@ library
                         Koar.Patch,
                         Koar.Patchctl,
                         Koar.PdOsc,
+                        Koar.Reverb,
                         Koar.Score
   other-modules:        Koar.Proto
   hs-source-dirs:       hs
