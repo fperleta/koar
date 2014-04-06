@@ -523,6 +523,11 @@ reverbSinks rev w loffs lg lp roffs rg rp = event $ do
     reg <- regE rev
     genE . emit $ I_reverb_sinks reg w loffs lg lp roffs rg rp
 
+reverbDiffuse :: Ref s Reverb -> Nat -> Nat -> Nat -> Double -> Nat -> Double  -> Nat -> Double -> Nat -> Double -> Score s ()
+reverbDiffuse rev w nstages l1 g1 l2 g2 l3 g3 l4 g4 = event $ do
+    reg <- regE rev
+    genE . emit $ I_reverb_diffuse reg w nstages l1 g1 l2 g2 l3 g3 l4 g4
+
 reverbTCFilter :: Ref s Reverb -> Double -> Score s ()
 reverbTCFilter rev beta = event $ do
     reg <- regE rev

@@ -160,6 +160,7 @@ data Instr
     | I_reverb_internal Reg Nat Nat Nat Double Double
     | I_reverb_sources Reg Nat Nat Double Double Nat Double Double
     | I_reverb_sinks Reg Nat Nat Double Double Nat Double Double
+    | I_reverb_diffuse Reg Nat Nat Nat Double Nat Double Nat Double Nat Double
     | I_reverb_tcfilter Reg Double
 
   deriving (Eq, Show)
@@ -285,7 +286,10 @@ bInstr x = case x of
                                 -> bNat 132 <> bNat r <> bNat w <> bNat loffs <> bDbl lg <> bDbl lp <> bNat roffs <> bDbl rg <> bDbl rp
     I_reverb_sinks r w loffs lg lp roffs rg rp
                                 -> bNat 133 <> bNat r <> bNat w <> bNat loffs <> bDbl lg <> bDbl lp <> bNat roffs <> bDbl rg <> bDbl rp
-    I_reverb_tcfilter r beta    -> bNat 134 <> bNat r <> bDbl beta
+    I_reverb_diffuse r w n l1 g1 l2 g2 l3 g3 l4 g4
+                                -> bNat 134 <> bNat r <> bNat w <> bNat n
+                                    <> bNat l1 <> bDbl g1 <> bNat l2 <> bDbl g2 <> bNat l3 <> bDbl g3 <> bNat l4 <> bDbl g4
+    I_reverb_tcfilter r beta    -> bNat 135 <> bNat r <> bDbl beta
 
 -- }}}
 

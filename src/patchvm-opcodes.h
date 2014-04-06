@@ -560,12 +560,24 @@ OPCODE (133, "reverb/sinks", reverb_sinks)
     ARG (A_DOUBLE, "rp")
 END
 
-OPCODE (134, "reverb/tcfilter", reverb_tcfilter)
+OPCODE (134, "reverb/diffuse", reverb_diffuse)
+    ARG (A_REG + T_REVERB, "self")
+    ARG (A_NAT, "w")
+    ARG (A_NAT, "nstages")
+    ARG (A_NAT, "l1")
+    ARG (A_DOUBLE, "g1")
+    ARG (A_NAT, "l2")
+    ARG (A_DOUBLE, "g2")
+    ARG (A_NAT, "l3")
+    ARG (A_DOUBLE, "g3")
+    ARG (A_NAT, "l4")
+    ARG (A_DOUBLE, "g4")
+END
+
+OPCODE (135, "reverb/tcfilter", reverb_tcfilter)
     ARG (A_REG + T_REVERB, "self")
     ARG (A_DOUBLE, "beta")
 END
-
-RESERVED (135)
 
 // }}}
 

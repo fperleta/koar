@@ -24,6 +24,16 @@ typedef struct {
     samp_t z_1; // previous outputs
 } dtap_t;
 
+#define MAX_STAGES 4
+
+typedef struct {
+    samp_t* buf;
+    size_t nstages;
+    size_t lens[MAX_STAGES];
+    size_t heads[MAX_STAGES];
+    samp_t coeffs[MAX_STAGES];
+} diffuser_t;
+
 struct reverb_s {
     size_t nwalls;
 
@@ -35,6 +45,9 @@ struct reverb_s {
     dline_t* walls;
     dline_t* lsink;
     dline_t* rsink;
+
+    // diffusers:
+    diffuser_t* diffs; // nwalls
 
     // dtaps:
     dtap_t* taps_buf;
@@ -59,6 +72,29 @@ dtap_write (dtap_t* tap, samp_t* xs, size_t hd, size_t len, samp_t x)
     samp_t y = tap->g * x + tap->p * tap->z_1;
     tap->z_1 = y;
     xs[(hd + tap->offs) % len] += y;
+}
+
+MACRO samp_t __attribute__ ((hot))
+diffuse (diffuser_t* d, samp_t x)
+{
+    size_t i;
+    samp_t* xs = d->buf;
+
+    for (i = 0; i < d->nstages; i++)
+    {
+        size_t head = d->heads[i];
+        samp_t g = d->coeffs[i];
+
+        samp_t old = xs[head];
+        samp_t new = x + g * old;
+        xs[head] = new;
+        x = old - g * new;
+
+        d->heads[i] = (head + 1) % d->lens[i];
+        xs += d->lens[i];
+    }
+
+    return x;
 }
 
 static void
@@ -86,7 +122,7 @@ reverb_loop (reverb_t rev, const samp_t* lxs, const samp_t* rxs,
         // walls to walls and sinks
         for (j = 0; j < nwalls; j++)
         {
-            samp_t wx = -rev->walls[j].xs[whd];
+            samp_t wx = diffuse (rev->diffs + j, -rev->walls[j].xs[whd]);
             rev->walls[j].xs[whd] = 0;
 
             for (k = 0; k < j; k++)
@@ -223,6 +259,24 @@ N_reverb_make (patch_t p, pnode_t src1, pnode_t src2, pnode_t snk1, pnode_t snk2
         }
         rev->lsink->xs = buf;
         rev->rsink->xs = buf + sink_len;
+    } while (0); // }}}
+
+    do { // diffusers {{{
+        rev->diffs = xmalloc (sizeof (diffuser_t) * nwalls);
+
+        size_t i, j;
+        for (i = 0; i < nwalls; i++)
+        {
+            diffuser_t* d = rev->diffs + i;
+            d->buf = NULL;
+            d->nstages = 0;
+            for (j = 0; j < MAX_STAGES; j++)
+            {
+                d->lens[j] = 0;
+                d->heads[j] = 0;
+                d->coeffs[j] = 0;
+            }
+        }
     } while (0); // }}}
 
     do { // taps {{{
@@ -364,6 +418,49 @@ PATCHVM_reverb_sinks (patchvm_t vm, instr_t instr)
     samp_t rg = instr->args[6].dbl;
     samp_t rp = instr->args[7].dbl;
     N_reverb_sinks (an, w, loffs, lg, lp, roffs, rg, rp);
+}
+
+// }}}
+
+// diffuse {{{
+
+void
+N_reverb_diffuse (anode_t an, size_t w, size_t nstages,
+                  size_t l1, samp_t g1, size_t l2, samp_t g2,
+                  size_t l3, samp_t g3, size_t l4, samp_t g4)
+{
+    reverb_t rev = anode_state (an);
+    size_t i = w % rev->nwalls;
+    diffuser_t* d = rev->diffs + i;
+
+    d->nstages = nstages;
+    d->lens[0] = l1; d->coeffs[0] = g1;
+    d->lens[1] = l2; d->coeffs[1] = g2;
+    d->lens[2] = l3; d->coeffs[2] = g3;
+    d->lens[3] = l4; d->coeffs[3] = g4;
+
+    size_t j, len = l1 + l2 + l3 + l4;
+    d->buf = xrealloc (d->buf, sizeof (samp_t) * len);
+    for (j = 0; j < len; j++)
+        d->buf[j] = 0;
+
+}
+
+void
+PATCHVM_reverb_diffuse (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    size_t w = instr->args[1].nat;
+    size_t nstages = instr->args[2].nat;
+    size_t l1 = instr->args[3].nat;
+    samp_t g1 = instr->args[4].dbl;
+    size_t l2 = instr->args[5].nat;
+    samp_t g2 = instr->args[6].dbl;
+    size_t l3 = instr->args[7].nat;
+    samp_t g3 = instr->args[8].dbl;
+    size_t l4 = instr->args[9].nat;
+    samp_t g4 = instr->args[10].dbl;
+    N_reverb_diffuse (an, w, nstages, l1, g1, l2, g2, l3, g3, l4, g4);
 }
 
 // }}}

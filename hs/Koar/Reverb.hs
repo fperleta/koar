@@ -24,6 +24,7 @@ data ReverbSpec = ReverbSpec
     { rsNumWalls :: N
     , rsWallDists :: [[R]]
     , rsWallGains :: [[R]]
+    , rsWallWidths :: [R]
     , rsSrcDists :: ([R], [R])
     , rsSrcGains :: ([R], [R])
     , rsSnkDists :: ([R], [R])
@@ -44,6 +45,7 @@ reverb rs = Pipe $ \(Sink2 o1 o2) -> do
 
     let wds = map (map (* spm)) $ rsWallDists rs
     let wps = zipWith zip wds $ rsWallGains rs
+    let wts = map (* spm) $ rsWallWidths rs
     let lids = map (* spm) . fst $ rsSrcDists rs
     let rids = map (* spm) . snd $ rsSrcDists rs
     let lps = zip lids . fst $ rsSrcGains rs
@@ -60,6 +62,7 @@ reverb rs = Pipe $ \(Sink2 o1 o2) -> do
             ; g = g0 * 2 * r0 * rP / (r0 + rP)
             ; p = (r0 - rP) / (r0 + rP)
             } in (g, p)
+    let diffusion l t = (exp $ -6.91 * fromIntegral l / t) / sqrt 2
 
     let maxWd = maximum (map maximum wds) `max` maximum lids `max` maximum rids
     let maxSd = maximum lods `max` maximum rods
@@ -83,6 +86,12 @@ reverb rs = Pipe $ \(Sink2 o1 o2) -> do
         let (lg, lp) = damping 1 lm
         let (rg, rp) = damping 1 rm
         reverbSinks rev w (round lm) lg lp (round rm) rg rp
+
+    -- diffusers:
+    forM_ (zip [0..] wts) $ \(w, t) -> do
+        let ls@[l1, l2, l3, l4] = [13, 17, 19, 23]
+        let [g1, g2, g3, g4] = map (flip diffusion t) ls
+        reverbDiffuse rev w 4 l1 g1 l2 g2 l3 g3 l4 g4
 
     -- tonal correction:
     let alpha = nNyq / nDC
@@ -120,6 +129,7 @@ buildReverb tDC tNyq isep osep front ws = ReverbSpec
     { rsNumWalls = fromIntegral $ length ws
     , rsWallDists = [[dist c1 c2 | c2 <- cs] | c1 <- cs]
     , rsWallGains = [[wallGain w c | w <- ws] | c <- cs]
+    , rsWallWidths = [dist p1 p2 | (p1, p2) <- ws]
     , rsSrcDists = unzip [(dist il c, dist ir c) | c <- cs]
     , rsSrcGains = unzip [(srcGain w il, srcGain w ir) | w <- ws]
     , rsSnkDists = unzip [(dist ol c, dist or c) | c <- cs]
