@@ -73,12 +73,14 @@ stereoProd = Sink2 <$> makeProd <*> makeProd
 
 (<:) :: Sink s ch -> Src s ch -> Score s ()
 snk <: Src f = f snk
+infix 2 <:
 {-# INLINE (<:) #-}
 
 (-:) :: Pipe s ch ch' -> Src s ch -> Src s ch'
 Pipe f -: src = Src $ \snk -> do
     tmp <- f snk
     tmp <: src
+infixr 3 -:
 {-# INLINE (-:) #-}
 
 graft :: Sink s ch' -> Pipe s ch ch' -> Score s (Sink s ch)
@@ -89,6 +91,8 @@ graft snk (Pipe f) = f snk
 g +: f = Pipe $ \snk -> do
     snk' <- graft snk g
     graft snk' f
+infixr 4 +:
+{-# INLINE (+:) #-}
 
 instance Monoid (Src s ch) where
     mempty = Src $ \snk -> case snk of
