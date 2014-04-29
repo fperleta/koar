@@ -635,13 +635,16 @@ newtype Score s a = Score { unScore :: Scr s -> (a, Scr s, ES s) }
 instance Functor (Score s) where
     fmap f x = Score $ \s -> case unScore x s of
         (x', s', es) -> (f x', s', es)
+    {-# INLINE fmap #-}
 
 instance Applicative (Score s) where
     pure x = Score $ \s -> (x, s, Stop)
+    {-# INLINE pure #-}
 
     f <*> x = Score $ \s -> case unScore f s of
         (f', s', es) -> case unScore x s' of
             (x', s'', es') -> (f' x', s'', es <> es')
+    {-# INLINE (<*>) #-}
 
 instance Monad (Score s) where
     return = pure
@@ -649,6 +652,7 @@ instance Monad (Score s) where
     x >>= f = Score $ \s -> case unScore x s of
         (x', s', es) -> case unScore (f x') s' of
             (fx, s'', es') -> (fx, s'', es <> es')
+    {-# INLINE (>>=) #-}
 
 -- }}}
 
