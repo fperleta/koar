@@ -34,6 +34,7 @@ import qualified Data.IntMap as IM
 import           Data.IntMap (IntMap)
 import           Data.Monoid
 import           Data.Word
+import           Control.Applicative
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Network.Socket hiding (send, sendTo, recv, recvFrom)
@@ -127,7 +128,7 @@ newtype DirectT m a = DirectT
     { unDirectT :: ReaderT Socket
                     (StateT (PeerState m) m) a
     }
-  deriving (Functor, Monad, MonadIO)
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 data PeerState m = PeerState
     { psNextSerial :: Word32

@@ -57,6 +57,7 @@ pdOsc layers = Pipe $ \(Sink1 out) -> do
     go layers ph0 out
     return $ Sink1 inp
   where
+    go :: [(N, Sink s Mono, Sink s Mono)] -> Ref s P -> Ref s P -> Score s ()
     go [] = \src snk -> void $ cos2piMake src snk
     go ((k, Sink1 dsig, Sink1 osig):ls) = pdLayer k dsig osig (go ls)
 

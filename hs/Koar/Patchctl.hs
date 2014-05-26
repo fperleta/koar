@@ -30,6 +30,7 @@ module Koar.Patchctl
 -- }}}
 
 -- imports {{{
+import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Bits
@@ -333,6 +334,10 @@ instance Functor Gen where
     fmap f gen = Gen $ \fr is -> case unGen gen fr is of
         (x, fr', is') -> (f x, fr', is')
     {-# INLINE fmap #-}
+
+instance Applicative Gen where
+    pure = return
+    (<*>) = ap
 
 instance Monad Gen where
     return x = Gen $ \fr is -> (x, fr, is)
