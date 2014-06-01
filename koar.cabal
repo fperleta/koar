@@ -14,6 +14,7 @@ library
                         Koar.LTI,
                         Koar.Patch,
                         Koar.Patchctl,
+                        Koar.Pattern,
                         Koar.PdOsc,
                         Koar.Reverb,
                         Koar.Score
