@@ -14,6 +14,7 @@ import           Data.Monoid
 import           Koar.Common
 import           Koar.Equalizer
 import           Koar.Patch
+import           Koar.Pitch
 import           Koar.Score
 -- }}}
 
@@ -400,6 +401,12 @@ instance EnvQuant Freq where
         ConstE f0 -> ConstE <$> toNormFreq' f0
         LinE f t -> do f' <- toNormFreq' f; return $ LinE f' t
         XdecE f tau -> do f' <- toNormFreq' f; return $ XdecE f' tau
+
+instance EnvQuant Pitch where
+    toAmp s = case s of
+        ConstE p0 -> ConstE <$> toNormFreq' (pitchFreq p0)
+        LinE p t -> do f' <- toNormFreq' (pitchFreq p); return $ LinE f' t
+        XdecE p tau -> do f' <- toNormFreq' (pitchFreq p); return $ XdecE f' tau
 
 -- }}}
 
