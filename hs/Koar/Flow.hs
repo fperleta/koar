@@ -404,9 +404,9 @@ instance EnvQuant Freq where
 
 instance EnvQuant Pitch where
     toAmp s = case s of
-        ConstE p0 -> ConstE <$> toNormFreq' (pitchFreq p0)
-        LinE p t -> do f' <- toNormFreq' (pitchFreq p); return $ LinE f' t
-        XdecE p tau -> do f' <- toNormFreq' (pitchFreq p); return $ XdecE f' tau
+        ConstE p0 -> ConstE <$> pitchNormFreq p0
+        LinE p t -> do f' <- pitchNormFreq p; return $ LinE f' t
+        XdecE p tau -> do f' <- pitchNormFreq p; return $ XdecE f' tau
 
 -- }}}
 

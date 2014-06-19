@@ -4,75 +4,133 @@
 
 -- exports {{{
 module Koar.Pitch
-    where
+    ( Pitch
+    , pitchRatio
+    , pitchInv
+    , ji, ed, edo, edt, edf
+    ) where
 -- }}}
 
 -- imports {{{
 import           Data.Function (fix)
+import           Data.List (genericLength, insert, intercalate)
+import           Data.Monoid
+import           Data.Ratio
 
 import           Koar.Common
-import           Koar.Score
 -- }}}
 
--- pitch spaces {{{
+-- prime numbers & factorization {{{
 
-data Pitch = Pitch
-    { pitchHertz :: {-# UNPACK #-} !Double
-    , pitchUp :: Pitch
-    , pitchDown :: Pitch
-    }
-
-pitchFreq :: Pitch -> Freq
-pitchFreq = hz . pitchHertz
-
-pitchSpace :: (Int -> Double) -> Pitch
-pitchSpace f = p0
+primes :: [Integer]
+primes = 2 : 3 : 5 : 7 : rest
   where
-    p0 = Pitch (f 0) (up 1 p0) (down (-1) p0)
-    up k p' = fix $ \x -> Pitch (f k) (up (succ k) x) p'
-    down k p' = fix $ \x -> Pitch (f k) p' (down (pred k) x)
+    rest = filter isPrime . dropWhile (<= 7) $ wheel [2, 3, 5, 7]
 
-pitchUpward :: Pitch -> [Freq]
-pitchUpward = go
+isPrime :: Integer -> Bool
+isPrime n
+    | n < 2 = False
+    | otherwise = all (\p -> n `mod` p /= 0) . takeWhile (\p -> p^2 <= n) $ primes
+
+wheel :: [Integer] -> [Integer]
+wheel ps = tail . scanl (+) 0 $ skip : wheel
   where
-    go x = pitchFreq x : go (pitchUp x)
+    len = product ps
+    bits = map (\n -> all (\p -> n `mod` p /= 0) ps) [0 .. len - 1]
+    (junk, first) = break id bits
+    skip = genericLength junk
+    wheel = go first
+    go (_:xs) = case break id xs of
+        (stuff, []) -> 1 + genericLength stuff + skip : wheel
+        (stuff, rs) -> 1 + genericLength stuff : go rs
+
+trialDiv :: Integer -> [Integer]
+trialDiv = go primes
+  where
+    go :: [Integer] -> Integer -> [Integer]
+    go _ 1 = []
+    go pz@(p:ps) n
+        | p^2 > n = [n]
+        | mod n p == 0 = p : go pz (div n p)
+        | otherwise = go ps n
+
+powers :: [Integer] -> [(Integer, Integer)]
+powers [] = []
+powers (x:xs) = go x 1 xs
+  where
+    go p k [] = (p, k) : []
+    go p k (x:xs)
+        | p == x     =  go p (k + 1) xs
+        | otherwise  =  (p, k) : go x 1 xs
+
+pvector :: [(Integer, Integer)] -> [Integer]
+pvector = go primes
+  where
+    go _ [] = []
+    go (p:ps) xs@((p', k):xs')
+        | p == p' = k : go ps xs'
+        | otherwise = 0 : go ps xs
 
 -- }}}
 
--- basic operations {{{
+-- (relative) pitch {{{
 
-transpose :: Int -> Pitch -> Pitch
-transpose k p = case compare k 0 of
-    EQ -> p
-    LT -> transpose (succ k) $ pitchDown p
-    GT -> transpose (pred k) $ pitchUp p
+newtype Pitch = Pitch { unPitch :: [Rational] }
+  deriving (Eq)
 
-relativeTo :: Pitch -> [Int] -> [Freq]
-relativeTo p ks = map (pitchFreq . flip transpose p) ks
+pitchRatio :: Pitch -> Double
+pitchRatio (Pitch ks) = product $ zipWith f primes ks
+  where
+    f p k = fromIntegral p ** fromRational k
+
+
+
+instance Show Pitch where
+    show (Pitch ks) = '|' : intercalate " " (map go ks) ++ ">"
+      where
+        go k = showsPrec 0 (numerator k) $ if denominator k == 1
+            then []
+            else show $ denominator k
+
+instance Monoid Pitch where
+    mempty = Pitch []
+    mappend (Pitch a) (Pitch b) = Pitch $ go a b
+      where
+        go [] bs = bs
+        go as [] = as
+        go (a:as) (b:bs) = case (a + b, go as bs) of
+            (0, []) -> []
+            (c, cs) -> c : cs
+
+pitchInv :: Pitch -> Pitch
+pitchInv (Pitch ks) = Pitch $ map negate ks
+
+-- }}}
+
+-- just intonation {{{
+
+ji :: Rational -> Pitch
+ji q
+    | q >= 0 = (Pitch . go $ numerator q)
+            <> (Pitch . map negate . go $ denominator q)
+    | otherwise = error "ji: negative rational!"
+  where
+    go = map fromIntegral . pvector . powers . trialDiv
 
 -- }}}
 
 -- equal temperament {{{
 
-equalTemperament :: Rational -> Nat -> Pitch -> Pitch
-equalTemperament b t (Pitch f0 _ _) = pitchSpace $ \k ->
-    f0 * (fromRational b ** (fromIntegral k / fromIntegral t))
+ed :: Rational -> Rational -> Pitch
+ed period = f
+  where
+    Pitch ks = ji period
+    f q = Pitch $ map (* q) ks
 
-tet12, tet19 :: Pitch -> Pitch
-tet12 = equalTemperament 2 12
-tet19 = equalTemperament 2 19
-
-midiTuning :: Pitch
-midiTuning = transpose (-69) . tet12 . pitchSpace $ const 440
-
--- }}}
-
--- just intervals {{{
-
-circleOfFifths :: Pitch -> Pitch
-circleOfFifths (Pitch f0 _ _) = pitchSpace $ \k ->
-    f0 * (fromIntegral (2 ^ min 0 k * 3 ^ max 0 k)
-        / fromIntegral (2 ^ max 0 k * 3 ^ min 0 k))
+edo, edt, edf :: Rational -> Pitch
+edo = ed 2
+edt = ed 3
+edf = ed (3/2)
 
 -- }}}
 

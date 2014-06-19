@@ -9,6 +9,7 @@ module Koar.Score
     ( module Control.Applicative
     , module Control.Monad
     , module Koar.Patchctl
+    , module Koar.Pitch
 
     -- quantities
     , Time(..), sec, msec
@@ -42,6 +43,7 @@ module Koar.Score
     , freshFRef
     , shift
     , scale
+    , transpose
     , event
     , here
     , frame
@@ -50,6 +52,7 @@ module Koar.Score
     , toPeriods, toPeriods'
     , toNormFreq, toNormFreq'
     , timeToFreq, freqToTime
+    , pitchNormFreq
 
     ) where
 -- }}}
@@ -66,6 +69,7 @@ import           Data.Monoid
 import           Data.Ratio
 
 import           Koar.Patchctl
+import           Koar.Pitch
 -- }}}
 
 -- internal time {{{
@@ -623,6 +627,7 @@ data Here s = Here
     { hereRate :: {-# UNPACK #-} !Int
     , hereT0 :: {-# UNPACK #-} !Secs
     , hereDT :: {-# UNPACK #-} !Secs
+    , hereF0 :: {-# UNPACK #-} !Double
     , hereFrame :: {-# UNPACK #-} !(FRef s)
     }
 
@@ -658,8 +663,8 @@ instance Monad (Score s) where
 
 -- running {{{
 
-runScore :: Int -> Score s () -> Gen ()
-runScore srHertz x = esGen (fromIntegral srHertz) end $ case unScore x scr0 of
+runScore :: Int -> Double -> Score s () -> Gen ()
+runScore srHertz f0Hertz x = esGen (fromIntegral srHertz) end $ case unScore x scr0 of
     (_, _, es) -> es
   where
     end = endE (FRef 0)
@@ -669,6 +674,7 @@ runScore srHertz x = esGen (fromIntegral srHertz) end $ case unScore x scr0 of
             { hereRate = srHertz
             , hereT0 = 0
             , hereDT = 1
+            , hereF0 = f0Hertz / fromIntegral srHertz
             , hereFrame = FRef 0
             }
         }
@@ -735,6 +741,9 @@ freqToTime f = Score $ \s -> let
     ; t = recip $ freqHertz f + fromRational (freqPerCell f / dt)
     } in (sec $ toRational t, s, Stop)
 
+pitchNormFreq :: Pitch -> Score s Double
+pitchNormFreq p = Score $ \s -> (hereF0 (scrHere s) * pitchRatio p, s, Stop)
+
 
 
 localHere :: (Here s -> Here s) -> Score s a -> Score s a
@@ -753,6 +762,10 @@ scale :: Time -> Score s a -> Score s a
 scale t = localHere $ \h@(Here { hereDT = dt }) ->
     let dt' = timeSecs t + timeCells t * unSecs dt
     in h { hereDT = Secs dt' }
+
+transpose :: Pitch -> Score s a -> Score s a
+transpose p = localHere $ \h@(Here { hereF0 = f0 }) ->
+    h { hereF0 = f0 * pitchRatio p }
 
 here :: Score s (FRef s)
 here = Score $ \s -> (hereFrame $ scrHere s, s, Stop)
