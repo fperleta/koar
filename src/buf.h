@@ -115,14 +115,14 @@ buf_lin (buf_t b, samp_t x0, samp_t dx, size_t n)
 MACRO samp_t
 buf_xdec (buf_t b, samp_t x0, samp_t xinf, samp_t tau, size_t n)
 {
-    samp_t f1 = expf (-1/tau);
-    samp_t f4 = expf (-4/tau);
+    samp_t f1 = exp (-1/tau);
+    samp_t f4 = exp (-4/tau);
     samp_t h = x0 - xinf;
     samp4_t z4 = {1, f1, f1*f1, f1*f1*f1};
     size_t i;
     for (i = 0; 4*i < n; i++, z4 *= f4)
         b.x4s[i] = xinf + h * z4;
-    return xinf + h * expf (-n / tau);
+    return xinf + h * exp (-(samp_t) n / tau);
 }
 // }}}
 

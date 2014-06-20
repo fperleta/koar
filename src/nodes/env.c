@@ -71,7 +71,8 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
     }
 
     patch_datum_t out = { .b = b };
-    pnode_write (p, anode_get_sink (an, 0), out, now);
+    pnode_t snk = anode_get_sink (an, 0);
+    pnode_write (p, snk, out, now);
 }
 
 static struct ainfo_s
