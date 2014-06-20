@@ -204,6 +204,13 @@ envXdec r xinf tau = do
         reg <- regE r
         genE . emit $ I_env_xdec reg xinf p
 
+envCos :: Ref s Env -> Double -> Time -> Score s ()
+envCos r x1 t = do
+    p <- toPeriods' t
+    event $ do
+        reg <- regE r
+        genE . emit $ I_env_cos reg x1 p
+
 -- }}}
 
 -- phasor {{{

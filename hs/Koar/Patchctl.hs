@@ -98,6 +98,7 @@ data Instr
     | I_env_const Reg Double
     | I_env_lin Reg Double Double
     | I_env_xdec Reg Double Double
+    | I_env_cos Reg Double Double
 
     -- phasors:
     | I_phasor_make Reg Reg Reg
@@ -228,6 +229,7 @@ bInstr x = case x of
     I_env_const r x0            -> bNat 81 <> bNat r <> bDbl x0
     I_env_lin r x1 t            -> bNat 82 <> bNat r <> bDbl x1 <> bDbl t
     I_env_xdec r xinf tau       -> bNat 83 <> bNat r <> bDbl xinf <> bDbl tau
+    I_env_cos r x1 t            -> bNat 84 <> bNat r <> bDbl x1 <> bDbl t
 
     I_phasor_make r src snk     -> bNat 90 <> bNat r <> bNat src <> bNat snk
     I_phasor_jump r phase       -> bNat 91 <> bNat r <> bDbl phase

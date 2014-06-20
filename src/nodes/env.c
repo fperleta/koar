@@ -13,7 +13,8 @@
 typedef enum {
     ENV_CONST = 0,
     ENV_LIN,
-    ENV_XDEC
+    ENV_XDEC,
+    ENV_COS
 } env_mode_t;
 
 typedef struct env_s* env_t;
@@ -23,6 +24,7 @@ struct env_s {
     samp_t x0;
     samp_t x1;
     double t;
+    double phi, dphi;
 };
 
 // }}}
@@ -66,6 +68,26 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
             env->x0 = buf_xdec (b, env->x0, env->x1, env->t, delta);
             break;
 
+        case ENV_COS:
+            {
+                size_t t = floor (env->t);
+                size_t n = (delta < t)? delta : t;
+                env->phi = buf_cos (b, env->x0, env->x1, env->phi, env->dphi, n);
+                env->t -= n;
+
+                size_t i;
+                for (i = n; i < delta; i++)
+                    b.xs[i] = env->x1;
+
+                if (env->t < 1)
+                {
+                    env->mode = ENV_CONST;
+                    env->x0 = env->x1;
+                    env->t = 0;
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -99,7 +121,7 @@ N_env_make (patch_t p, pnode_t out, samp_t x0)
     env_t env = anode_state (an);
     env->mode = ENV_CONST;
     env->x0 = env->x1 = x0;
-    env->t = 0;
+    env->t = env->phi = env->dphi = 0;
 
     return an;
 }
@@ -189,6 +211,34 @@ PATCHVM_env_xdec (patchvm_t vm, instr_t instr)
     double xinf = instr->args[1].dbl;
     double tau = instr->args[2].dbl;
     N_env_xdec (an, xinf, tau);
+}
+
+// }}}
+
+// cos {{{
+
+void
+N_env_cos (anode_t an, samp_t x1, double t)
+{
+    anode_lock (an);
+
+    env_t env = anode_state (an);
+    env->mode = ENV_COS;
+    env->x1 = x1;
+    env->t = t;
+    env->phi = 0;
+    env->dphi = 1 / t;
+
+    anode_unlock (an);
+}
+
+void
+PATCHVM_env_cos (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    double x1 = instr->args[1].dbl;
+    double t = instr->args[2].dbl;
+    N_env_cos (an, x1, t);
 }
 
 // }}}

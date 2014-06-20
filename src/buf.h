@@ -126,6 +126,20 @@ buf_xdec (buf_t b, samp_t x0, samp_t xinf, samp_t tau, size_t n)
 }
 // }}}
 
+// cos {{{
+
+MACRO samp_t
+buf_cos (buf_t b, samp_t x0, samp_t x1, samp_t phi0, samp_t dphi, size_t n)
+{
+    samp_t phi;
+    size_t i;
+    for (i = 0, phi = phi0; i < n; i++, phi += dphi)
+        b.xs[i] = x1 + (x0 - x1) * 0.5 * (cos (M_PI * phi) + 1);
+    return phi0 + n * dphi;
+}
+
+// }}}
+
 // add {{{
 MACRO void
 buf_add (buf_t acc, buf_t b, size_t n)

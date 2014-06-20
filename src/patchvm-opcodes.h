@@ -254,8 +254,13 @@ OPCODE (83, "env/xdec", env_xdec)
     ARG (A_DOUBLE, "tau")
 END
 
+OPCODE (84, "env/cos", env_cos)
+    ARG (A_REG + T_ENV, "self")
+    ARG (A_DOUBLE, "x1")
+    ARG (A_DOUBLE, "t")
+END
+
 // {{{
-RESERVED (84)
 RESERVED (85)
 RESERVED (86)
 RESERVED (87)

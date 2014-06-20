@@ -377,6 +377,7 @@ data EnvStep a
     = ConstE a
     | LinE a Time
     | XdecE a Time
+    | CosE a Time
 
 class EnvQuant a where
     toAmp :: EnvStep a -> Score s (EnvStep R)
@@ -389,24 +390,28 @@ instance EnvQuant Double where
         ConstE x0 -> envConst r x0
         LinE x1 t -> envLin r x1 t
         XdecE xinf tau -> envXdec r xinf tau
+        CosE x1 t -> envCos r x1 t
 
 instance EnvQuant Time where
     toAmp s = case s of
         ConstE t0 -> ConstE <$> toPeriods' t0
         LinE t' t -> do t'' <- toPeriods' t'; return $ LinE t'' t
         XdecE t tau -> do t' <- toPeriods' t; return $ XdecE t' tau
+        CosE t' t -> do t'' <- toPeriods' t'; return $ CosE t'' t
 
 instance EnvQuant Freq where
     toAmp s = case s of
         ConstE f0 -> ConstE <$> toNormFreq' f0
         LinE f t -> do f' <- toNormFreq' f; return $ LinE f' t
         XdecE f tau -> do f' <- toNormFreq' f; return $ XdecE f' tau
+        CosE f t -> do f' <- toNormFreq' f; return $ CosE f' t
 
 instance EnvQuant Pitch where
     toAmp s = case s of
         ConstE p0 -> ConstE <$> pitchNormFreq p0
         LinE p t -> do f' <- pitchNormFreq p; return $ LinE f' t
         XdecE p tau -> do f' <- pitchNormFreq p; return $ XdecE f' tau
+        CosE p t -> do f' <- pitchNormFreq p; return $ CosE f' t
 
 -- }}}
 

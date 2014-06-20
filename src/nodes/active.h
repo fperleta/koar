@@ -55,6 +55,7 @@ extern anode_t N_env_make (patch_t, pnode_t, samp_t);
 extern void N_env_const (anode_t, samp_t);
 extern void N_env_lin (anode_t, samp_t, double);
 extern void N_env_xdec (anode_t, samp_t, double);
+extern void N_env_cos (anode_t, samp_t, double);
 
 // }}}
 
