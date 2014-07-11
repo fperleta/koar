@@ -29,6 +29,9 @@ instance Monoid (AddPat s) where
 fill :: Time -> DivPat s -> AddPat s
 fill dur (DivPat f) = AddPat dur $ f dur
 
+instance Transposable (AddPat s) where
+    transpose p (AddPat t x) = AddPat t $ transpose p x
+
 -- }}}
 
 -- divisive patterns {{{
@@ -74,6 +77,9 @@ nonuniform xs = DivPat $ \dur -> do
             f dur'
             shift dur' $ go ps
     go xs
+
+instance Transposable (DivPat s) where
+    transpose p (DivPat f) = DivPat $ \dur -> transpose p $ f dur
 
 -- }}}
 

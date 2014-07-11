@@ -7,6 +7,7 @@ module Koar.Pitch
     ( Pitch
     , pitchRatio
     , pitchInv
+    , Transposable(..)
     , ji, ed, edo, edt, edf
     ) where
 -- }}}
@@ -104,6 +105,16 @@ instance Monoid Pitch where
 
 pitchInv :: Pitch -> Pitch
 pitchInv (Pitch ks) = Pitch $ map negate ks
+
+-- }}}
+
+-- transposable {{{
+
+class Transposable a where
+    transpose :: Pitch -> a -> a
+
+instance Transposable Pitch where
+    transpose = mappend
 
 -- }}}
 

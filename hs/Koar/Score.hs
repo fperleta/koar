@@ -43,7 +43,6 @@ module Koar.Score
     , freshFRef
     , shift
     , scale
-    , transpose
     , event
     , here
     , frame
@@ -763,9 +762,9 @@ scale t = localHere $ \h@(Here { hereDT = dt }) ->
     let dt' = timeSecs t + timeCells t * unSecs dt
     in h { hereDT = Secs dt' }
 
-transpose :: Pitch -> Score s a -> Score s a
-transpose p = localHere $ \h@(Here { hereF0 = f0 }) ->
-    h { hereF0 = f0 * pitchRatio p }
+instance Transposable (Score s a) where
+    transpose p = localHere $ \h@(Here { hereF0 = f0 }) ->
+        h { hereF0 = f0 * pitchRatio p }
 
 here :: Score s (FRef s)
 here = Score $ \s -> (hereFrame $ scrHere s, s, Stop)
