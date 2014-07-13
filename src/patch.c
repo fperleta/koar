@@ -636,10 +636,10 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
         an->stamp = now;
     }
 
+    pthread_mutex_unlock (&(an->mutex));
+
     if (!(--an->waiting))
         activate (p, an);
-
-    pthread_mutex_unlock (&(an->mutex));
 }
 
 static void

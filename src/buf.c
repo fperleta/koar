@@ -75,7 +75,7 @@ buf_alloc (bufpool_t pool)
 
 buf_t
 #if DEBUG_BUFS
-buf_acquire_ (const char* fn, int ln, bufpool_t pool)
+buf_acquire_ (const char* fn, int ln, buf_t b)
 #else
 buf_acquire (buf_t b)
 #endif
@@ -83,9 +83,12 @@ buf_acquire (buf_t b)
     bufpool_t pool = bufpool_get (b);
     size_t i = bufpool_index (b);
 
-    //log_emit (LOG_DETAIL, "buf_acquire (%zu)", i);
     if ((i < BUFPOOL_HEAD) && (i >= BUFPOOL_TOTAL))
         panic ("invalid bufpool index %zu (ptr = %p)", i, b.p);
+
+#if DEBUG_BUFS
+    log_emit (LOG_DEBUG, "buf_acquire (%zu)", i, fn, ln);
+#endif
 
     pthread_mutex_lock (&(pool->mutex));
     if (pool->rc[i] == 0xFF)
@@ -116,10 +119,13 @@ buf_release (buf_t b)
     if (!pool->rc[i])
     {
 #if DEBUG_BUFS
-        log_emit (LOG_DETAIL, "buf_free (%zu) @ %s:%d", i, fn, ln);
+        log_emit (LOG_DEBUG, "buf_free (%zu) @ %s:%d", i, fn, ln);
 #endif
         pool->free++;
     }
+#if DEBUG_BUFS
+    else log_emit (LOG_DEBUG, "buf_release (%zu) @ %s:%d", i, fn, ln);
+#endif
     pthread_mutex_unlock (&(pool->mutex));
 }
 
