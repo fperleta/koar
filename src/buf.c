@@ -69,6 +69,13 @@ buf_alloc (bufpool_t pool)
     log_emit (LOG_DEBUG, "buf_alloc (%zu) @ %s:%d", i, fn, ln);
 #endif
 
+    /* clear */ {
+        samp_t* xs = (((void*) pool) + (i << BUF_BYTES_LOG));
+        size_t j;
+        for (j = 0; j < (1u << (BUF_BYTES_LOG - 2)); j++)
+            xs[j] = 0;
+    }
+
     pthread_mutex_unlock (&(pool->mutex));
     return (buf_t) (((void*) pool) + (i << BUF_BYTES_LOG));
 }

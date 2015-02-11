@@ -260,7 +260,7 @@ activate (patch_t p, anode_t an)
     p->tail = (p->tail + 1) % PATCH_QUEUE_SIZE;
     p->count++;
 
-    pthread_cond_signal (&(p->nonempty));
+    pthread_cond_broadcast (&(p->nonempty));
 
     pthread_mutex_unlock (&(p->mutex));
 }
@@ -283,16 +283,12 @@ patch_tick (patch_t p, size_t delta)
         size_t i;
         for (i = 0; i < p->nroots; i++)
             p->queue[i] = p->roots[i];
-
-        patch_unlock (p);
     }
 
     // wake up the workers
-    pthread_cond_signal (&(p->nonempty));
+    pthread_cond_broadcast (&(p->nonempty));
 
     /* wait for the workers */ {
-        patch_lock (p);
-
         while (p->working || p->count)
         {
             if (p->count)
@@ -636,9 +632,11 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
         an->stamp = now;
     }
 
+    int ready = !(--an->waiting);
+
     pthread_mutex_unlock (&(an->mutex));
 
-    if (!(--an->waiting))
+    if (ready)
         activate (p, an);
 }
 

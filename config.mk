@@ -3,7 +3,7 @@
 SHELL=/bin/sh
 CC=gcc
 CPP=gcc -E
-CFLAGS=-W -Wall -std=gnu11 -pthread -g -DDEBUG
+CFLAGS=-W -Wall -std=gnu11 -pthread -g -DDEBUG -O0
 CPPFLAGS=-iquote src/
 LIBS=-L/usr/local/lib -lm -lev -lsndfile
 

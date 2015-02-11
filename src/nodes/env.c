@@ -79,7 +79,7 @@ env_tick (patch_t p, anode_t an, patch_stamp_t now, size_t delta)
                 for (i = n; i < delta; i++)
                     b.xs[i] = env->x1;
 
-                if (env->t < 1)
+                if (unlikely (env->t < 1))
                 {
                     env->mode = ENV_CONST;
                     env->x0 = env->x1;
