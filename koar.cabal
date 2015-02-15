@@ -12,6 +12,7 @@ library
                         Koar.Equalizer,
                         Koar.Flow,
                         Koar.LTI,
+                        Koar.PadSynth,
                         Koar.Patch,
                         Koar.Patchctl,
                         Koar.Pattern,
