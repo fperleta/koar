@@ -476,7 +476,10 @@ OPCODE (122, "reson/lowpass", reson_lowpass)
     ARG (A_DOUBLE, "gain")
 END
 
-RESERVED (123)
+OPCODE (123, "reson/highpass", reson_highpass)
+    ARG (A_REG + T_RESON, "self")
+    ARG (A_DOUBLE, "gain")
+END
 
 // }}}
 

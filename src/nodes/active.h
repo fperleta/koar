@@ -103,6 +103,7 @@ extern void N_reson_pure (anode_t, samp_t);
 extern void N_reson_res (anode_t, samp_t);
 extern void N_reson_peak (anode_t, samp_t);
 extern void N_reson_lowpass (anode_t, samp_t);
+extern void N_reson_highpass (anode_t, samp_t);
 
 // }}}
 

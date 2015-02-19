@@ -17,7 +17,8 @@ struct reson_s {
         PURE_2POLE = 0,
         RES_GAIN,
         PEAK_GAIN,
-        LOWPASS
+        LOWPASS,
+        HIGHPASS
     } mode;
     samp_t gain;
     samp_t h1, h2;
@@ -106,6 +107,25 @@ reson_loop (reson_t rs, const samp_t* xs, const samp_t* fs, const samp_t* qs,
 
                 // H(1) = 4/(1 + a1 + a2)
                 ys[i] = rs->gain * (1 + a1 + a2) * 0.25 * y;
+            }
+            break; // }}}
+
+        case HIGHPASS: // highpass (both zeros at 1) {{{
+            for (i = 0; i < len; i++)
+            {
+                samp_t x = xs[i];
+                samp_t y = x + h1;
+
+                samp_t f = fs[i];
+                samp_t r = 1 - M_PI * f / qs[i];
+                samp_t a1 = -2 * r * cos (2*M_PI*f);
+                samp_t a2 = r * r;
+
+                h1 = -2 * x - a1 * y + h2;
+                h2 = x - a2 * y;
+
+                // H(-1) = 2/(1 - a1 + a2)
+                ys[i] = rs->gain * (1 - a1 + a2) * 0.5 * y;
             }
             break; // }}}
 
@@ -269,6 +289,26 @@ PATCHVM_reson_lowpass (patchvm_t vm, instr_t instr)
     anode_t an = patchvm_get (vm, instr->args[0].reg).an;
     samp_t gain = instr->args[1].dbl;
     N_reson_lowpass (an, gain);
+}
+
+// }}}
+
+// highpass {{{
+
+void
+N_reson_highpass (anode_t an, samp_t gain)
+{
+    reson_t rs = anode_state (an);
+    rs->mode = HIGHPASS;
+    rs->gain = gain;
+}
+
+void
+PATCHVM_reson_highpass (patchvm_t vm, instr_t instr)
+{
+    anode_t an = patchvm_get (vm, instr->args[0].reg).an;
+    samp_t gain = instr->args[1].dbl;
+    N_reson_highpass (an, gain);
 }
 
 // }}}
