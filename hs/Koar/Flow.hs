@@ -102,6 +102,11 @@ instance Monoid (Src s ch) where
     mappend s s' = Src $ \snk -> snk <: s >> snk <: s'
     mconcat ss = Src $ \snk -> mapM_ (snk <:) ss
 
+frameSrc :: Time -> Src s ch -> Src s ch
+frameSrc dur inner = Src $ \out -> do
+    out <: toucher
+    frame dur $ out <: inner
+
 -- }}}
 
 -- sinks {{{
