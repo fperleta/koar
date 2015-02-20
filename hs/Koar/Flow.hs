@@ -187,6 +187,15 @@ noise color seed = Src $ \snk -> case snk of
 
 -- }}}
 
+-- toucher {{{
+
+toucher :: Src s ch
+toucher = Src $ \snk -> case snk of
+    Sink1 m -> touch m
+    Sink2 l r -> touch l >> touch r
+
+-- }}}
+
 -- }}}
 
 -- pipes {{{
