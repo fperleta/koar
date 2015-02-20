@@ -99,11 +99,9 @@ worker (void* arg)
     {
         if (!p->count)
         {
-            //log_emit (LOG_DEBUG, "patch worker %d waiting for activations...", self);
             int res = pthread_cond_wait (&(p->nonempty), &(p->mutex));
             if (res)
                 panic ("pthread_cond_wait() returned %d", res);
-            //log_emit (LOG_DEBUG, "patch worker %d wakeup", self);
         }
 
         if (p->shutdown)
@@ -120,16 +118,13 @@ worker (void* arg)
         p->working++;
         pthread_mutex_unlock (&(p->mutex));
         pthread_mutex_lock (&(an->mutex));
-        //log_emit (LOG_DEBUG, "patch worker %p processing anode %p (%s) at time %zu", self, an, an->info->name, now);
         an->info->tick (p, an, now, delta);
-        //log_emit (LOG_DEBUG, "patch worker %p done with anode %p (%s) at time %zu", self, an, an->info->name, now);
         pthread_mutex_unlock (&(an->mutex));
         pthread_mutex_lock (&(p->mutex));
         p->working--;
 
         if (!p->working && !p->count)
         {
-            //log_emit (LOG_DEBUG, "patch worker %d broadcasting empty", self);
             pthread_cond_broadcast (&(p->empty));
         }
     }
@@ -378,7 +373,9 @@ anode_destroy (anode_t an)
 
     int res = pthread_mutex_destroy (&(an->mutex));
     if (res)
-        panic ("pthread_mutex_destroy() returned %d", res); free (an);
+        panic ("pthread_mutex_destroy() returned %d", res);
+
+    free (an);
 }
 
 anode_t
@@ -608,7 +605,7 @@ pnode_read (pnode_t pn, patch_stamp_t now)
         pn->toread = pn->nreaders;
     }
 
-    patch_datum_t x = pn->state;
+    patch_datum_t x = pn->info->pass (pn->patch, pn->state);
     if (!(--pn->toread))
     {
         if (pn->info->dispose)
@@ -618,7 +615,7 @@ pnode_read (pnode_t pn, patch_stamp_t now)
 
     pthread_mutex_unlock (&(pn->mutex));
 
-    return pn->info->pass (pn->patch, x);
+    return x;
 }
 
 static void
@@ -633,11 +630,10 @@ input_ready (patch_t p, anode_t an, patch_stamp_t now)
     }
 
     int ready = !(--an->waiting);
-
-    pthread_mutex_unlock (&(an->mutex));
-
     if (ready)
         activate (p, an);
+
+    pthread_mutex_unlock (&(an->mutex));
 }
 
 static void
@@ -683,8 +679,6 @@ pnode_write (patch_t p, pnode_t pn, patch_datum_t x, patch_stamp_t now)
         pn->state = x;
     }
 
-    //log_emit (LOG_DEBUG, "pnode_write() written %zu/%zu", pn->written, pn->writers);
-
     check_written (p, pn, now);
 
     pthread_mutex_unlock (&(pn->mutex));
@@ -705,8 +699,6 @@ pnode_dont_write (patch_t p, pnode_t pn, patch_stamp_t now)
             pn->info->dispose (pn->state);
         pn->state = pn->info->neutral;
     }
-
-    //log_emit (LOG_DEBUG, "pnode_dont_write() written %zu/%zu", pn->written, pn->writers);
 
     check_written (p, pn, now);
 

@@ -437,7 +437,7 @@ putInstrs h is = forM_ (chunkInstrs 48000 is) $ \cs -> do
 
 runSlave :: [Instr] -> IO ()
 runSlave is = do
-    let cp = (proc "koar" ["--slave", "-v"]) { std_in = CreatePipe }
+    let cp = (proc "koar" ["--slave", "-v", "-w4"]) { std_in = CreatePipe }
     (Just h, _, _, ph) <- createProcess cp
     hSetBuffering h NoBuffering
     hSetBinaryMode h True
