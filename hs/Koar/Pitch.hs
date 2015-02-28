@@ -91,7 +91,7 @@ instance Show Pitch where
       where
         go k = showsPrec 0 (numerator k) $ if denominator k == 1
             then []
-            else show $ denominator k
+            else '/' : show (denominator k)
 
 instance Monoid Pitch where
     mempty = Pitch []
