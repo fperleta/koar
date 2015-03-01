@@ -443,6 +443,7 @@ runSlave is = do
     hSetBinaryMode h True
     putInstrs h is
     hFlush h
+    hClose h
     status <- waitForProcess ph
     case status of
         ExitSuccess -> return ()
